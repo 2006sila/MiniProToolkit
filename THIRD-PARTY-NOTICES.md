@@ -1,5 +1,7 @@
 # 第三方组件声明（THIRD-PARTY NOTICES）
 
+> 本文件只覆盖第三方组件。MiniProToolkit 主项目自身采用 MIT（版权人 2006sila），见仓库根 `LICENSE` 与 `docs/license.md`；下列组件仍按各自许可证提供，不因主项目采用 MIT 而改变。
+
 MiniProToolkit 以**未修改的二进制形式**分发下列第三方 NuGet 包。本文件不复制第三方源码或许可证全文；完整许可文本可从注明的 nuget.org 包或许可证链接取得。
 
 核对依据（只读）：

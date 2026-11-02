@@ -4,8 +4,8 @@
   "archiveRoot": "MiniProToolkit-source-v0.1.0/",
   "hashAlgorithm": "SHA-256",
   "selfHashPolicy": "SOURCE-ARCHIVE-MANIFEST.json is intentionally excluded from its own entries; external archive evidence records its hash and ZIP hash.",
-  "fileCountExcludingManifest": 217,
-  "primaryLicense": "Undecided: no root LICENSE; not an open-source authorization. THIRD-PARTY-NOTICES.md is not the main project license.",
+  "fileCountExcludingManifest": 218,
+  "primaryLicense": "MIT (LICENSE at archive root, Copyright (c) 2026 2006sila)",
   "excludedContent": [
     "research",
     ".pi",
@@ -37,6 +37,13 @@
       "originalSha256": "D3A4CD8C3442D5F321D88DAF590EA187A3F9A9F6233EE78102C56569FB4265D6"
     },
     {
+      "path": "LICENSE",
+      "length": 1065,
+      "sha256": "D29EBF752311F4D0E2CFCF1BEB29354862D2D62671C63AAEDA94D73579CBD224",
+      "originalLength": 1065,
+      "originalSha256": "D29EBF752311F4D0E2CFCF1BEB29354862D2D62671C63AAEDA94D73579CBD224"
+    },
+    {
       "path": "MiniProToolkit.sln",
       "length": 2994,
       "sha256": "F1044DAF8E12707A214E05F1A8A6AEE7A630D86162CC3BA919F0059AE691C93A",
@@ -45,29 +52,24 @@
     },
     {
       "path": "README.md",
-      "length": 10709,
-      "sha256": "685127F264C935FC5236B3A4EFC1B5326EB3598F62C8D8ABCCF819B86F7CC941",
-      "originalLength": 10709,
-      "originalSha256": "685127F264C935FC5236B3A4EFC1B5326EB3598F62C8D8ABCCF819B86F7CC941"
+      "length": 11488,
+      "sha256": "6B9DCE42DC71A3673F6A91397DB428952C182A38B118DC3AEE12A3306A302A98",
+      "originalLength": 11488,
+      "originalSha256": "6B9DCE42DC71A3673F6A91397DB428952C182A38B118DC3AEE12A3306A302A98"
     },
     {
       "path": "SOURCE-ARCHIVE-NOTICE.md",
-      "length": 3164,
-      "sha256": "EACCF7375CFC9E0C70E0EE50BF787035ABA57BF3F7222C2584B2ED9CEE838BD3"
+      "length": 4058,
+      "sha256": "5403B74DCD720356D0DA0802046E954540895EFCDD48013D57919393A03F5B7D",
+      "originalLength": 4058,
+      "originalSha256": "5403B74DCD720356D0DA0802046E954540895EFCDD48013D57919393A03F5B7D"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
-      "length": 5430,
-      "sha256": "C371540C390BC0715B72C94735F6478DB3D201959BEB78A73DC0F3EBDA762111",
-      "originalLength": 5430,
-      "originalSha256": "C371540C390BC0715B72C94735F6478DB3D201959BEB78A73DC0F3EBDA762111"
-    },
-    {
-      "path": "docs/LICENSE-DECISION-REQUIRED.md",
-      "length": 5293,
-      "sha256": "908773E76F2FF9181617CECDAD7CB58F8064D9C3EF1EE8F105224BE5320CD886",
-      "originalLength": 5293,
-      "originalSha256": "908773E76F2FF9181617CECDAD7CB58F8064D9C3EF1EE8F105224BE5320CD886"
+      "length": 5664,
+      "sha256": "7CD9DE485471786E4BB6C1B62976A5A1363BF98D83E225A0BC889DCAB493FF74",
+      "originalLength": 5664,
+      "originalSha256": "7CD9DE485471786E4BB6C1B62976A5A1363BF98D83E225A0BC889DCAB493FF74"
     },
     {
       "path": "docs/architecture.md",
@@ -96,6 +98,13 @@
       "sha256": "2BC967D5DFE79F9AA13C41D28610FF85010A5D1FC4D47A3C50BC7C5DCA0DE372",
       "originalLength": 27085,
       "originalSha256": "2BC967D5DFE79F9AA13C41D28610FF85010A5D1FC4D47A3C50BC7C5DCA0DE372"
+    },
+    {
+      "path": "docs/license.md",
+      "length": 2654,
+      "sha256": "9456B0D6817B8F0B4B8A5AB81ACFD415193014541B6A180B4B339E7FBB9B3DE3",
+      "originalLength": 2654,
+      "originalSha256": "9456B0D6817B8F0B4B8A5AB81ACFD415193014541B6A180B4B339E7FBB9B3DE3"
     },
     {
       "path": "docs/phase-3-validation.md",
@@ -141,10 +150,10 @@
     },
     {
       "path": "installer/MiniProToolkit.iss",
-      "length": 4515,
-      "sha256": "0B1192D57EF007F6FACEF58AF86FDE09CBD5FD4DC19A666F4FA5EE68C661F27A",
-      "originalLength": 4515,
-      "originalSha256": "0B1192D57EF007F6FACEF58AF86FDE09CBD5FD4DC19A666F4FA5EE68C661F27A"
+      "length": 4538,
+      "sha256": "988F2149A2E4B2A3131D864538FA786C1C3F79DFFFD0D120EB89F73E56C31DA9",
+      "originalLength": 4538,
+      "originalSha256": "988F2149A2E4B2A3131D864538FA786C1C3F79DFFFD0D120EB89F73E56C31DA9"
     },
     {
       "path": "scripts/build-installer.ps1",

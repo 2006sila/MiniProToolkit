@@ -45,7 +45,7 @@
 - `live-installer-{upgrade,repair,uninstall,freshinstall}.json`：较早快照四项正常生命周期通过；mode-fix 另有实际同版本升级证据，不能外推失败回滚/活动租约分支。
 - `elevated-release-demo-smoke.json`：管理员下真实 Release apphost/demo CLI 通过，早期 ERROR 740 不再是当前阻塞。Release 只读探测有 CPU 4201 MHz、LHM 59.6°C/13.6 W、GPU 35°C、Storage 38°C；主板/音频/亮度仍未知，读到数值不等于准确性或写控制验收。
 
-剩余包括自动标定实机、至少 2 小时 soak、多档稳定性与故障/90°C、睡眠/登录启动、人工 UI/a11y、单屏 Shell/OSD/热键、自动化/IPC 完整矩阵和安装失败分支。主项目仍**无根 LICENSE**，版权主体与签名决策待定，Setup 为 **NotSigned**；第三方声明和已移除子产品的历史许可证都不代表主项目授权。历史计数与早期失败仅在专门历史区保留，不当作当前阻塞或新发布结果。
+剩余包括自动标定实机、至少 2 小时 soak、多档稳定性与故障/90°C、睡眠/登录启动、人工 UI/a11y、单屏 Shell/OSD/热键、自动化/IPC 完整矩阵和安装失败分支。主项目采用 **MIT**（版权人 2006sila，见 [LICENSE](LICENSE)），Setup 为 **NotSigned**、签名决策待定；第三方声明只覆盖对应依赖，已移除子产品的历史许可证不适用于本项目。历史计数与早期失败仅在专门历史区保留，不当作当前阻塞或新发布结果。
 
 ## 文档与目录
 
@@ -57,7 +57,7 @@
 - [风扇控制加固](docs/fan-control-hardening.md)
 - [阶段3](docs/phase-3-validation.md)、[阶段4](docs/phase-4-validation.md)
 
-仓库内部状态清单 `docs/gap-list.md`、规划 `docs/console-product-plan.md` 与许可证决策文档不随包分发。`src/` 产品源码、`tests/` 测试、`scripts/` 开发/发布脚本、`research/` 原安装包/解包/证据与研究工具；文档描述不替代对应执行证据。
+仓库内部状态清单 `docs/gap-list.md` 与规划 `docs/console-product-plan.md` 不随包分发。`src/` 产品源码、`tests/` 测试、`scripts/` 开发/发布脚本、`research/` 原安装包/解包/证据与研究工具；文档描述不替代对应执行证据。
 
 ## 构建与运行（操作说明，不构成执行证据）
 
@@ -79,3 +79,11 @@ dotnet run --project .\src\MiniProToolkit.App\MiniProToolkit.App.csproj -c Debug
 ```powershell
 dotnet run --project .\src\MiniProToolkit.App\MiniProToolkit.App.csproj -c Debug -- --demo
 ```
+
+## 许可证
+
+主项目采用 **MIT**，版权人 `2006sila`，年份 2026，全文见 [LICENSE](LICENSE)，决定记录见 [docs/license.md](docs/license.md)。
+
+随包分发的第三方组件（LibreHardwareMonitorLib、DiskInfoToolkit、BlackSharp、HidSharp、Mono.Posix.NETStandard、.NET 平台库等）仍按其自身许可证提供（MPL-2.0 / MIT / Apache-2.0），不因主项目采用 MIT 而改变，完整清单见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。已移除的 `lite/` 子产品许可证不适用于本项目。
+
+安装器当前为 **NotSigned**，Windows SmartScreen 可能提示；MIT 的免责条款（AS IS，无担保）同样覆盖风扇、EC 与温度阈值这类硬件操作，请自行确认在目标机器上可用。

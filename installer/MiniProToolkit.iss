@@ -16,6 +16,7 @@ AppId={{8B07DA31-E0A5-4B64-A8DD-3C0B2A1DCD74}}
 AppName={#ProductName}
 AppVersion={#AppVersion}
 AppPublisher=MiniProToolkit
+LicenseFile=..\LICENSE
 DefaultDirName={autopf}\MiniProToolkit
 DefaultGroupName=MiniProToolkit
 UsedUserAreasWarning=no
