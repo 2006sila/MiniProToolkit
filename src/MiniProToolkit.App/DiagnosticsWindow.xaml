@@ -1,0 +1,110 @@
+<Window x:Class="MiniProToolkit.App.DiagnosticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置与诊断"
+        Width="760"
+        Height="900"
+        MinWidth="680"
+        MinHeight="700"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button AutomationProperties.Name="关闭设置与诊断" Content="关闭" Click="CloseClick" IsCancel="True" />
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <TextBlock Text="设置与诊断" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock Text="这里显示当前权限、Guardian、租约、日志和历史记录路径。诊断读取不会写入硬件；系统控制仅由“设置并读回”按钮显式触发。"
+                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="管理员权限" Margin="0,4" />
+                <TextBlock x:Name="AdminText" AutomationProperties.Name="管理员权限状态" Grid.Column="1" Margin="0,4" />
+                <TextBlock Text="Guardian 服务" Grid.Row="1" Margin="0,4" />
+                <TextBlock x:Name="GuardianText" AutomationProperties.Name="Guardian 服务状态" Grid.Row="1" Grid.Column="1" Margin="0,4" />
+                <TextBlock Text="租约" Grid.Row="2" Margin="0,4" />
+                <TextBlock x:Name="LeaseText" AutomationProperties.Name="租约状态" Grid.Row="2" Grid.Column="1" Margin="0,4" />
+                <TextBlock Text="曲线配置" Grid.Row="3" Margin="0,4" />
+                <TextBlock x:Name="CurveConfigText" AutomationProperties.Name="曲线配置路径" Grid.Row="3" Grid.Column="1" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock Text="历史 JSONL" Grid.Row="4" Margin="0,4" />
+                <TextBlock x:Name="JsonlText" AutomationProperties.Name="历史 JSONL 路径" Grid.Row="4" Grid.Column="1" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock Text="历史 CSV" Grid.Row="5" Margin="0,4" />
+                <TextBlock x:Name="CsvText" AutomationProperties.Name="历史 CSV 路径" Grid.Row="5" Grid.Column="1" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock Text="应用日志" Grid.Row="6" Margin="0,4" />
+                <TextBlock x:Name="AppLogText" AutomationProperties.Name="应用日志路径" Grid.Row="6" Grid.Column="1" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock Text="软件版本" Grid.Row="7" Margin="0,4" />
+                <TextBlock x:Name="VersionText" AutomationProperties.Name="软件版本" Grid.Row="7" Grid.Column="1" Margin="0,4" />
+                <TextBlock Text="最近恢复" Grid.Row="8" Margin="0,4" />
+                <TextBlock x:Name="RecoveryText" AutomationProperties.Name="最近恢复状态" Grid.Row="8" Grid.Column="1" Margin="0,4" TextWrapping="Wrap" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="0,14,0,4">
+                <TextBlock Text="产品硬件能力" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button AutomationProperties.Name="只读探测产品硬件能力" Content="只读探测" Click="ProbeCapabilitiesClick" Margin="10,0,0,0" />
+            </StackPanel>
+            <TextBox x:Name="CapabilitiesText" AutomationProperties.Name="产品硬件能力只读报告" Height="95" IsReadOnly="True" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="尚未探测。" />
+            <StackPanel Orientation="Horizontal" Margin="0,14,0,4">
+                <TextBlock Text="系统指示（只读）" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button AutomationProperties.Name="只读读取系统指示" Content="只读读取" Click="ReadSystemIndicatorsClick" Margin="10,0,0,0" />
+            </StackPanel>
+            <TextBox x:Name="SystemIndicatorsText" AutomationProperties.Name="系统指示只读报告" Height="95" IsReadOnly="True" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="尚未读取。" />
+            <TextBlock Text="CapsLock/NumLock 取键盘当前切换状态（UI 线程）；内建屏幕亮度与默认输出音量、默认麦克风静音在后台线程读取。Caps/Num 保持只读。"
+                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0" />
+            <StackPanel Orientation="Horizontal" Margin="0,14,0,4">
+                <TextBlock Text="系统控制（显式写入）" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button x:Name="ProbeSystemControlsButton" AutomationProperties.Name="检查系统控制可用性，不写入" Content="检查可用性（不写入）" Click="ProbeSystemControlsClick" Margin="10,0,0,0" />
+            </StackPanel>
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="230" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="输出音量目标（0-100%）" Margin="0,4" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Slider x:Name="OutputVolumeTarget" AutomationProperties.Name="输出音量目标百分比" AutomationProperties.HelpText="范围 0 到 100；仅调整目标，点击设置输出音量并读回才写入。" Width="175" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="50" IsEnabled="False" Margin="4,4" />
+                    <TextBlock Text="{Binding ElementName=OutputVolumeTarget, Path=Value, StringFormat={}{0:F0}%}" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button Content="设置并读回" Grid.Column="2" Click="SetOutputVolumeClick" IsEnabled="False" x:Name="SetOutputVolumeButton" AutomationProperties.Name="设置输出音量并读回" AutomationProperties.HelpText="显式写入默认输出音量，并读回确认。" HorizontalAlignment="Left" Margin="8,0" />
+                <TextBlock Text="麦克风静音目标" Grid.Row="1" Margin="0,4" />
+                <CheckBox x:Name="MicrophoneMuteTarget" AutomationProperties.Name="麦克风静音目标" AutomationProperties.HelpText="勾选为静音，取消勾选为取消静音；点击设置麦克风静音并读回才写入。" Grid.Row="1" Grid.Column="1" Content="设为静音" IsChecked="False" IsEnabled="False" Margin="4,4" />
+                <Button Content="设置并读回" Grid.Row="1" Grid.Column="2" Click="SetMicrophoneMuteClick" IsEnabled="False" x:Name="SetMicrophoneMuteButton" AutomationProperties.Name="设置麦克风静音并读回" AutomationProperties.HelpText="显式写入默认麦克风静音状态，并读回确认。" HorizontalAlignment="Left" Margin="8,0" />
+                <TextBlock Text="内建屏幕亮度目标（0-100%）" Grid.Row="2" Margin="0,4" />
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                    <Slider x:Name="BrightnessTarget" AutomationProperties.Name="内建屏幕亮度目标百分比" AutomationProperties.HelpText="范围 0 到 100；仅调整目标，点击设置内建屏幕亮度并读回才写入。" Width="175" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="50" IsEnabled="False" Margin="4,4" />
+                    <TextBlock Text="{Binding ElementName=BrightnessTarget, Path=Value, StringFormat={}{0:F0}%}" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button Content="设置并读回" Grid.Row="2" Grid.Column="2" Click="SetBrightnessClick" IsEnabled="False" x:Name="SetBrightnessButton" AutomationProperties.Name="设置内建屏幕亮度并读回" AutomationProperties.HelpText="显式写入内建屏幕亮度，并读回确认。" HorizontalAlignment="Left" Margin="8,0" />
+            </Grid>
+            <TextBox x:Name="SystemControlsText" AutomationProperties.Name="系统控制与读回结果只读报告" Height="70" IsReadOnly="True" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="控制尚未检查；不会自动写入真实硬件。" />
+            <TextBlock Text="所有写入均由上方按钮显式触发，在后台线程执行一次并读回确认；写入错误、超时、实例歧义或读回不匹配都不会显示为成功。"
+                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0" />
+            <TextBlock Text="最近诊断" FontWeight="SemiBold" Margin="0,12,0,4" />
+            <TextBox x:Name="RecentText" AutomationProperties.Name="最近诊断只读报告" Height="125" IsReadOnly="True" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+            <WrapPanel Margin="0,8,0,0"><Button AutomationProperties.Name="复制诊断脱敏摘要" Content="复制脱敏摘要" Click="CopySummaryClick"/><Button AutomationProperties.Name="导出诊断脱敏摘要" Content="导出脱敏摘要" Click="ExportSummaryClick"/><Button AutomationProperties.Name="打开历史与事件" Content="打开历史与事件" Click="HistoryClick"/></WrapPanel>
+        </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

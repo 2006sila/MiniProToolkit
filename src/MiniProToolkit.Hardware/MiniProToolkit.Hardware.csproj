@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MiniProToolkit.Hardware</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniProToolkit.Core\MiniProToolkit.Core.csproj" />
+    <PackageReference Include="System.Management" Version="10.0.10" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.10" />
+    <!-- Optional read-only CPU cross-check sensors (MPL-2.0). See docs/architecture.md. -->
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.7-pre717" />
+  </ItemGroup>
+</Project>

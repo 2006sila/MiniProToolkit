@@ -1,0 +1,57 @@
+<Window x:Class="MiniProToolkit.App.ProfileAutomationWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="方案自动切换" Width="1020" Height="720" MinWidth="820" MinHeight="600" WindowStartupLocation="CenterOwner">
+ <DockPanel Margin="16">
+  <StackPanel DockPanel.Dock="Top">
+   <TextBlock Text="方案自动切换" FontSize="24" FontWeight="SemiBold"/>
+   <TextBlock Text="规则按优先级选择；相同优先级按名称稳定排序。默认关闭，切换有防抖时间，暂停后不会自动接管硬件。" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,10"/>
+   <WrapPanel><CheckBox x:Name="EnabledCheck" Content="启用自动切换" Margin="0,0,12,0"/><CheckBox x:Name="PausedCheck" Content="暂停自动切换"/></WrapPanel>
+   <TextBlock x:Name="StatusSummaryText" Foreground="#555" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+  </StackPanel>
+  <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+   <TextBlock x:Name="FeedbackText" Foreground="#555" TextWrapping="Wrap" MinHeight="28"/>
+   <WrapPanel HorizontalAlignment="Right"><Button Content="新建规则" Click="NewClick"/><Button Content="删除规则" Click="DeleteClick"/><Button Content="取消" IsCancel="True"/><Button Content="保存" Click="SaveClick" IsDefault="True"/></WrapPanel>
+  </StackPanel>
+  <TabControl AutomationProperties.Name="方案自动切换页面">
+   <TabItem Header="规则设置">
+  <Grid>
+   <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <ListBox x:Name="RulesList" AutomationProperties.Name="自动规则列表" SelectionChanged="SelectionChanged" Margin="0,0,12,0">
+    <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="4"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}" Foreground="#666" TextWrapping="Wrap" FontSize="11"/><TextBlock Text="{Binding Status}" Foreground="#8A6D3B" TextWrapping="Wrap" FontSize="11" Visibility="{Binding StatusVisibility}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+   </ListBox>
+   <Grid Grid.Column="1">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <TextBlock Text="规则名称"/><TextBox x:Name="NameText" AutomationProperties.Name="规则名称" Grid.Row="1" Margin="0,3,0,8"/>
+    <WrapPanel Grid.Row="2"><CheckBox x:Name="RuleEnabledCheck" Content="规则启用" Margin="0,0,16,0"/><TextBlock Text="优先级" VerticalAlignment="Center"/><TextBox x:Name="PriorityText" AutomationProperties.Name="规则优先级" Width="70" Margin="5,0,16,0"/><TextBlock Text="防抖秒" VerticalAlignment="Center"/><TextBox x:Name="DebounceText" AutomationProperties.Name="防抖秒数" Width="70" Margin="5,0,0,0"/></WrapPanel>
+    <TextBlock Text="目标方案" Grid.Row="3" Margin="0,10,0,0"/><ComboBox x:Name="ProfileCombo" AutomationProperties.Name="目标方案" Grid.Row="4" Margin="0,3,0,8"/>
+    <TextBlock Text="触发条件" Grid.Row="5"/><ComboBox x:Name="TriggerCombo" AutomationProperties.Name="触发条件" Grid.Row="6" Margin="0,3,0,8"><ComboBoxItem Content="接通 AC 电源"/><ComboBoxItem Content="使用电池"/><ComboBoxItem Content="CPU 占用高于阈值"/><ComboBoxItem Content="CPU 占用低于阈值"/><ComboBoxItem Content="时间范围"/><ComboBoxItem Content="指定进程启动"/><ComboBoxItem Content="指定进程退出"/></ComboBox>
+    <WrapPanel Grid.Row="7" VerticalAlignment="Top"><TextBlock Text="阈值 %" VerticalAlignment="Center"/><TextBox x:Name="ThresholdText" AutomationProperties.Name="CPU 阈值百分比" Width="70" Margin="5,0,16,0"/><TextBlock Text="进程名" VerticalAlignment="Center"/><TextBox x:Name="ProcessNameText" AutomationProperties.Name="触发进程名称" Width="160" Margin="5,0,0,0" ToolTip="例如: notepad 或 notepad.exe；只填进程名，不填路径"/></WrapPanel>
+    <WrapPanel Grid.Row="8" VerticalAlignment="Top" Margin="0,8,0,0"><TextBlock Text="开始 HH:mm" VerticalAlignment="Center"/><TextBox x:Name="StartText" AutomationProperties.Name="开始时间" Width="70" Margin="5,0,16,0"/><TextBlock Text="结束 HH:mm（24:00 可用）" VerticalAlignment="Center"/><TextBox x:Name="EndText" AutomationProperties.Name="结束时间" Width="80" Margin="5,0,0,0"/></WrapPanel>
+    <WrapPanel Grid.Row="9" VerticalAlignment="Top" Margin="0,12,0,0"><TextBlock Text="进程路径（可选，完整路径）" VerticalAlignment="Center"/><TextBox x:Name="ProcessPathText" AutomationProperties.Name="可选进程完整路径" Width="330" Margin="5,0,0,0" ToolTip="例如 C:\Apps\player.exe；留空表示不限制路径。只接受盘符或 UNC 完整路径。"/></WrapPanel>
+    <WrapPanel Grid.Row="10" VerticalAlignment="Top" Margin="0,8,0,0"><TextBlock Text="命令行包含" VerticalAlignment="Center"/><TextBox x:Name="ProcessCommandLineText" AutomationProperties.Name="命令行包含条件" Width="150" Margin="5,0,16,0" ToolTip="命令行子串，留空表示不限制；与命令行正则只能填一个。"/><TextBlock Text="命令行正则" VerticalAlignment="Center"/><TextBox x:Name="ProcessCommandLineRegexText" AutomationProperties.Name="命令行正则条件" Width="150" Margin="5,0,0,0" ToolTip="不区分大小写的正则，留空表示不限制；与子串只能填一个。"/></WrapPanel>
+    <TextBlock Grid.Row="11" Margin="0,6,0,0" FontSize="11" Foreground="#666" TextWrapping="Wrap" Text="路径与命令行条件只对「指定进程启动/退出」生效；子串与正则只能填一个，正则无效时保存会被拒绝。命令行只在内存中用于匹配，不写入日志或诊断。"/>
+    <TextBlock x:Name="RuleStatusText" Grid.Row="12" VerticalAlignment="Top" Margin="0,10,0,0" FontSize="11" Foreground="#8A6D3B" TextWrapping="Wrap"/>
+   </Grid>
+  </Grid>
+   </TabItem>
+   <TabItem Header="执行历史">
+    <DockPanel Margin="8">
+     <StackPanel DockPanel.Dock="Top">
+      <TextBlock Text="仅记录实际选中规则后的执行结果，最多显示 200 条。历史不含进程条件或原名；当前名称仅从内存映射显示。导出仅含稳定去标识 ID（未加盐哈希，可能被字典猜解，并非不可逆匿名保证）。" TextWrapping="Wrap" Margin="0,0,0,8"/>
+      <WrapPanel><Button x:Name="RefreshHistoryButton" Content="刷新历史" Click="RefreshHistoryClick" AutomationProperties.Name="刷新自动执行历史"/><Button x:Name="ExportHistoryButton" Content="导出哈希 ID CSV" Click="ExportHistoryClick" AutomationProperties.Name="导出哈希 ID 自动执行历史"/></WrapPanel>
+      <TextBlock x:Name="HistoryFeedbackText" TextWrapping="Wrap" Margin="0,5,0,8" AutomationProperties.Name="执行历史加载状态"/>
+     </StackPanel>
+     <DataGrid x:Name="HistoryGrid" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True" AutomationProperties.Name="自动执行历史（只读）">
+      <DataGrid.Columns>
+       <DataGridTextColumn Header="时间（本地）" Binding="{Binding Time}" Width="150"/>
+       <DataGridTextColumn Header="当前规则名 / 哈希 ID" Binding="{Binding Rule}" Width="*"/>
+       <DataGridTextColumn Header="当前方案名 / 哈希 ID" Binding="{Binding Profile}" Width="*"/>
+       <DataGridTextColumn Header="结果" Binding="{Binding Result}" Width="120"/>
+       <DataGridTextColumn Header="耗时 ms" Binding="{Binding Duration}" Width="80"/>
+      </DataGrid.Columns>
+     </DataGrid>
+    </DockPanel>
+   </TabItem>
+  </TabControl>
+ </DockPanel>
+</Window>

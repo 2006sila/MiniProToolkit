@@ -1,0 +1,89 @@
+<Window x:Class="MiniProToolkit.App.FanCurveEditorWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="安全曲线编辑器" Width="980" Height="900" MinWidth="880" MinHeight="760" WindowStartupLocation="CenterOwner">
+ <DockPanel Margin="16">
+  <StackPanel DockPanel.Dock="Top">
+   <TextBlock Text="安全风扇曲线" FontSize="24" FontWeight="SemiBold"/>
+   <TextBlock Text="蓝/橙节点编辑独立 duty 安全线；显式目标 RPM 列用于温度→转速跟踪。标定 RPM→duty 列仅为换算工具，不是跟踪。保存并应用方案后才接管风扇。" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,10"/>
+   <WrapPanel Margin="0,0,0,8">
+    <TextBlock Text="最低 duty %" VerticalAlignment="Center"/><TextBox x:Name="MinimumDutyText" Width="50" Margin="5,0,12,0" TextChanged="SettingsChanged"/>
+    <TextBlock Text="迟滞 °C" VerticalAlignment="Center"/><TextBox x:Name="HysteresisText" Width="50" Margin="5,0,12,0" TextChanged="SettingsChanged"/>
+    <TextBlock Text="升 duty/次" VerticalAlignment="Center"/><TextBox x:Name="IncreaseLimitText" Width="50" Margin="5,0,12,0" TextChanged="SettingsChanged"/>
+    <TextBlock Text="降 duty/次" VerticalAlignment="Center"/><TextBox x:Name="DecreaseLimitText" Width="50" Margin="5,0,12,0" TextChanged="SettingsChanged"/>
+    <TextBlock Text="紧急 °C" VerticalAlignment="Center"/><TextBox x:Name="EmergencyTemperatureText" Width="50" Margin="5,0,0,0" TextChanged="SettingsChanged"/>
+   </WrapPanel>
+   <Border BorderBrush="#E5E7EB" BorderThickness="1" Background="#F9FAFB" Padding="8" Margin="0,0,0,4">
+    <StackPanel>
+     <TextBlock Text="可选安全设置（默认关闭；关闭时行为与旧版完全一致，保存后仍为关闭）" FontWeight="SemiBold"/>
+     <WrapPanel Margin="0,6,0,0">
+      <CheckBox x:Name="RpmRateLimitCheck" Content="启用 RPM/s 限速" VerticalAlignment="Center" Margin="0,0,8,4" Checked="SafetyToggleChanged" Unchecked="SafetyToggleChanged"/>
+      <TextBlock Text="上升 RPM/s" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmRiseText" Width="62" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmRateLimitCheck}" ToolTip="1 号风扇转速每秒最多上升多少 RPM（50–10000）；不是 duty/次"/>
+      <TextBlock Text="下降 RPM/s" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFallText" Width="62" Margin="5,0,14,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmRateLimitCheck}" ToolTip="1 号风扇转速每秒最多下降多少 RPM（50–10000）；不是 duty/次"/>
+      <CheckBox x:Name="WarningTierCheck" Content="预警分级" VerticalAlignment="Center" Margin="0,0,8,4" Checked="SafetyToggleChanged" Unchecked="SafetyToggleChanged"/>
+      <TextBlock Text="温度 °C" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="WarningTemperatureText" Width="52" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=WarningTierCheck}" ToolTip="达到该 CPU 温度后目标 duty 至少提升到预警 duty（1–90 °C，必须低于紧急温度）"/>
+      <TextBlock Text="duty %" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="WarningDutyText" Width="52" Margin="5,0,14,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=WarningTierCheck}" ToolTip="预警分级 duty（40–100），不能低于曲线在该温度的 duty"/>
+      <CheckBox x:Name="PreEmergencyTierCheck" Content="紧急前级" VerticalAlignment="Center" Margin="0,0,8,4" Checked="SafetyToggleChanged" Unchecked="SafetyToggleChanged"/>
+      <TextBlock Text="温度 °C" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="PreEmergencyTemperatureText" Width="52" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=PreEmergencyTierCheck}" ToolTip="达到该 CPU 温度后目标 duty 至少提升到前级 duty（1–90 °C，必须低于紧急温度且高于预警温度）"/>
+      <TextBlock Text="duty %" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="PreEmergencyDutyText" Width="52" Margin="5,0,0,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=PreEmergencyTierCheck}" ToolTip="紧急前级 duty（40–100），不能低于曲线在该温度的 duty"/>
+     </WrapPanel>
+     <CheckBox x:Name="RpmTrackingCheck" Content="启用显式目标 RPM 跟踪（所有点必填；独立 duty 安全线始终优先；与旧反馈互斥）" Margin="0,6,0,4" Checked="TrackingToggleChanged" Unchecked="TrackingToggleChanged"/>
+     <WrapPanel Margin="0,4,0,0">
+      <CheckBox x:Name="RpmFeedbackCheck" Content="启用旧 RPM 只加 duty 反馈" VerticalAlignment="Center" Margin="0,0,8,4" Checked="SafetyToggleChanged" Unchecked="SafetyToggleChanged"
+       ToolTip="闭环只在曲线目标之上追加 duty，绝不低于曲线；默认关闭"/>
+      <TextBlock Text="死区 RPM" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFeedbackDeadbandText" Width="52" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmFeedbackCheck}" ToolTip="实际 RPM 与期望 RPM 的允许偏差（0–2000 RPM）"/>
+      <TextBlock Text="最低期望 RPM" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFeedbackMinimumExpectedText" Width="52" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmFeedbackCheck}" ToolTip="期望 RPM 低于该值时不判定失速（0–6000 RPM）"/>
+      <TextBlock Text="失速比例" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFeedbackStallRatioText" Width="44" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmFeedbackCheck}" ToolTip="实际 RPM 低于期望 RPM × 该比例时记一次失速样本（0.05–0.95）"/>
+      <TextBlock Text="单次补 duty %" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFeedbackCorrectionStepText" Width="44" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmFeedbackCheck}" ToolTip="每次修正最多追加的 duty（1–20），不能大于累计上限"/>
+      <TextBlock Text="累计补 duty 上限 %" VerticalAlignment="Center" Margin="0,0,0,4"/><TextBox x:Name="RpmFeedbackCorrectionDutyText" Width="44" Margin="5,0,10,4" TextChanged="SettingsChanged"
+       IsEnabled="{Binding IsChecked, ElementName=RpmFeedbackCheck}" ToolTip="闭环累计最多追加的 duty（1–30）"/>
+      <CheckBox x:Name="LatchCurveEmergencyCheck" Content="曲线 90 °C 锁存" VerticalAlignment="Center" Margin="0,0,8,4" Checked="SafetyToggleChanged" Unchecked="SafetyToggleChanged"
+       ToolTip="达到紧急温度后保持满速，温度回落也不自动降速；只能用“恢复自动/停止曲线”释放。默认关闭"/>
+     </WrapPanel>
+     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0"
+      Text="RPM/s 使用 1 号风扇实际转速反馈（每秒变化量，不是 duty/次）。实际 RPM 不可用或采样窗口不足时，RPM/s 限制不介入，仍由上方 duty/次 限制兜底。预警/紧急前级只会抬高目标 duty，不会降低散热；90 °C 紧急满速是固定保护，不可关闭，也不会被任何分级降低或替代。"/>
+     <TextBlock FontSize="11" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0"
+      Text="RPM 反馈闭环是纯配置：期望 RPM 取自本机标定，只允许在曲线 duty 之上追加有限 duty（单次/累计上限），连续坏样本或失速会交还 EC 自动。失速样本数（4）与坏样本容差（2）没有界面控件，按加载到的配置原样保留。90 °C 锁存同样只是配置：本窗口不读写硬件，锁存释放复用既有的“恢复自动/停止曲线”。"/>
+    </StackPanel>
+   </Border>
+  </StackPanel>
+  <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+   <TextBlock x:Name="FeedbackText" TextWrapping="Wrap" MinHeight="32"/>
+   <WrapPanel HorizontalAlignment="Right">
+    <Button Content="添加节点" Click="AddPointClick"/><Button Content="删除节点" Click="RemovePointClick"/>
+    <Button Content="恢复默认" Click="ResetClick"/><Button Content="导入曲线" Click="ImportClick"/><Button Content="导出曲线" Click="ExportClick"/>
+    <Button Content="取消" IsCancel="True"/><Button Content="保存并校验" Click="SaveClick" IsDefault="True"/>
+   </WrapPanel>
+  </StackPanel>
+  <Grid>
+   <Grid.RowDefinitions><RowDefinition Height="240"/><RowDefinition Height="Auto"/><RowDefinition Height="85"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+   <Border BorderBrush="#DDD" BorderThickness="1" Background="#FAFAFA">
+    <Canvas x:Name="CurveCanvas" ClipToBounds="True" SizeChanged="ChartSizeChanged"
+     MouseLeftButtonDown="ChartMouseDown" MouseMove="ChartMouseMove" MouseLeftButtonUp="ChartMouseUp" LostMouseCapture="ChartLostCapture"/>
+   </Border>
+   <TextBlock Grid.Row="1" Text="横轴：温度 °C · 左轴：duty % · 蓝实线：升温 · 橙虚线：降温 · 红虚线：紧急温度 · 绿点：实际 RPM 按标定折算的位置" FontSize="11" Foreground="#666" Margin="0,5" TextWrapping="Wrap"/>
+   <Border Grid.Row="2" Background="#F3F4F6"><Canvas x:Name="CalibrationCanvas" ClipToBounds="True" SizeChanged="ChartSizeChanged"/></Border>
+   <TextBlock Grid.Row="3" x:Name="LiveText" Text="等待实时状态" Foreground="#555" TextWrapping="Wrap" Margin="0,5"/>
+   <DataGrid Grid.Row="4" x:Name="PointsGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+    CanUserSortColumns="False" SelectionMode="Single" SelectionUnit="FullRow" SelectionChanged="PointSelectionChanged">
+    <DataGrid.Columns>
+     <DataGridTextColumn Header="升温 °C" Binding="{Binding TemperatureC, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+     <DataGridTextColumn Header="安全 duty %" Binding="{Binding DutyPercent, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+     <DataGridTextColumn Header="标定 RPM→duty（换算）" Binding="{Binding CalibrationRpm, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+     <DataGridTextColumn Header="显式目标 RPM" Binding="{Binding TargetRpm, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+     <DataGridTextColumn Header="降温阈值 °C" Binding="{Binding RampDownTemperatureC, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+    </DataGrid.Columns>
+   </DataGrid>
+  </Grid>
+ </DockPanel>
+</Window>

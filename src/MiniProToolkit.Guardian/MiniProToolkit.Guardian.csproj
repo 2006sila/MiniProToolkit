@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MiniProToolkit.Guardian</RootNamespace>
+    <AssemblyName>MiniProToolkit.Guardian</AssemblyName>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniProToolkit.Core\MiniProToolkit.Core.csproj" />
+    <ProjectReference Include="..\MiniProToolkit.Hardware\MiniProToolkit.Hardware.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.10" />
+  </ItemGroup>
+</Project>

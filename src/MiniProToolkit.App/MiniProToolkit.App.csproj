@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableDefaultApplicationDefinition>true</EnableDefaultApplicationDefinition>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MiniProToolkit.App</RootNamespace>
+    <AssemblyName>MiniProToolkit</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!--
+      WFO0003 ("Unsupported high DPI configuration") comes from the Windows Forms bootstrap
+      analyzer, which wants DPI awareness declared via ApplicationHighDpiMode /
+      Application.SetHighDpiMode() instead of the application manifest. That guidance only
+      applies to WinForms apps that call ApplicationConfiguration.Initialize(); this is a WPF
+      app whose startup path is App.xaml (no ApplicationConfiguration.Initialize()), so the
+      Win32 manifest is the real, load-bearing PerMonitorV2 declaration
+      (app.manifest: dpiAware=true/pm + dpiAwareness=PerMonitorV2, PerMonitor).
+      Suppress this single diagnostic id only; all other warnings stay active.
+    -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniProToolkit.Core\MiniProToolkit.Core.csproj" />
+    <ProjectReference Include="..\MiniProToolkit.Hardware\MiniProToolkit.Hardware.csproj" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.10" />
+    <!-- Direct WMI use for read-only process command lines in the automation sampler. -->
+    <PackageReference Include="System.Management" Version="10.0.10" />
+  </ItemGroup>
+</Project>

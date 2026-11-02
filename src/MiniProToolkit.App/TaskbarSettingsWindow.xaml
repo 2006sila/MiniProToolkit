@@ -1,0 +1,63 @@
+<Window x:Class="MiniProToolkit.App.TaskbarSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="任务栏与快捷键设置"
+        Width="660"
+        Height="760"
+        MinWidth="600"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="14">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button AutomationProperties.Name="上移所选任务栏项目" AutomationProperties.HelpText="将列表中当前选中项目向前移动一位。" Content="上移" Click="MoveUpClick" Margin="0,0,6,0" />
+            <Button AutomationProperties.Name="下移所选任务栏项目" AutomationProperties.HelpText="将列表中当前选中项目向后移动一位。" Content="下移" Click="MoveDownClick" Margin="0,0,6,0" />
+            <Button AutomationProperties.Name="取消任务栏与快捷键设置修改" Content="取消" Click="CancelClick" Margin="0,0,6,0" />
+            <Button AutomationProperties.Name="保存任务栏与快捷键设置" Content="保存" Click="SaveClick" IsDefault="True" />
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="任务栏显示设置" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock Text="勾选项目并用上移/下移调整顺序。任务栏只读取状态，不会写入硬件。"
+                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
+            <ListBox x:Name="ItemsList" AutomationProperties.Name="任务栏显示项目与顺序" AutomationProperties.HelpText="勾选要显示的项目；选中项目后使用上移或下移按钮调整顺序。" Height="260" SelectionMode="Single">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="勾选以在任务栏显示此状态项目。" Content="{Binding Label}" IsChecked="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Padding="4" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <CheckBox x:Name="CompactCheck" AutomationProperties.Name="任务栏紧凑横排" Content="紧凑横排" Margin="0,12,0,4" />
+            <CheckBox x:Name="VerticalCheck" AutomationProperties.Name="任务栏竖排显示" Content="竖排显示（适合竖向任务栏）" Margin="0,4" />
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="显示刷新间隔（秒）" VerticalAlignment="Center" />
+                <ComboBox x:Name="RefreshCombo" AutomationProperties.Name="任务栏显示刷新间隔秒数" AutomationProperties.HelpText="只影响任务栏显示；不改变风扇控制或遥测调度。" Width="80" Margin="8,0,0,0">
+                    <ComboBoxItem Content="1" />
+                    <ComboBoxItem Content="2" />
+                    <ComboBoxItem Content="3" />
+                    <ComboBoxItem Content="5" />
+                    <ComboBoxItem Content="10" />
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Text="此间隔只影响任务栏显示；风扇控制和遥测独立按 1 秒调度。"
+                       Foreground="#666" FontSize="11" Margin="0,10,0,0" />
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock Text="字体" VerticalAlignment="Center"/><TextBox x:Name="FontFamilyText" AutomationProperties.Name="任务栏字体家族" Grid.Column="1" Text="Segoe UI"/>
+                <TextBlock Text="字号" Grid.Row="1" VerticalAlignment="Center"/><TextBox x:Name="FontSizeText" AutomationProperties.Name="任务栏字号" Grid.Row="1" Grid.Column="1" Text="12"/>
+                <TextBlock Text="文字颜色" Grid.Row="2" VerticalAlignment="Center"/><TextBox x:Name="TextColorText" AutomationProperties.Name="任务栏文字颜色" AutomationProperties.HelpText="输入十六进制颜色，例如 #E8EAED。" Grid.Row="2" Grid.Column="1" Text="#E8EAED"/>
+                <TextBlock Text="背景颜色" Grid.Row="3" VerticalAlignment="Center"/><TextBox x:Name="BackgroundColorText" AutomationProperties.Name="任务栏背景颜色" AutomationProperties.HelpText="输入十六进制颜色，例如 #202124。" Grid.Row="3" Grid.Column="1" Text="#202124"/>
+            </Grid>
+            <Separator Margin="0,16,0,4"/>
+            <TextBlock Text="全局快捷键" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,4"/>
+            <TextBlock Text="只影响本应用自己注册的 Windows 全局快捷键，与厂商 Fn 键无关。按键仅允许 A-Z、0-9、F1-F12，且组合必须包含 Ctrl、Alt 或 Win；同一组合不能重复。"
+                       Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <StackPanel x:Name="HotkeyPanel" AutomationProperties.Name="全局快捷键组合设置" AutomationProperties.HelpText="按动作设置修饰键和主键；必须包含 Ctrl、Alt 或 Win，主键仅允许 A-Z、0-9、F1-F12，组合不能重复。保存后生效。" />
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button AutomationProperties.Name="恢复默认全局快捷键组合" AutomationProperties.HelpText="仅恢复编辑中的组合，保存后生效。" Content="恢复默认快捷键" Click="ResetHotkeysClick" />
+                <TextBlock x:Name="HotkeyStatusText" AutomationProperties.Name="快捷键设置状态" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

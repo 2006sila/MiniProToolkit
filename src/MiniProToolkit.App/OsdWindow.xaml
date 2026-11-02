@@ -1,0 +1,58 @@
+<Window x:Class="MiniProToolkit.App.OsdWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        AllowsTransparency="True"
+        SizeToContent="WidthAndHeight"
+        Background="Transparent">
+    <Border x:Name="Container" Background="#D9212121" CornerRadius="12" Padding="24,14" SnapsToDevicePixels="True">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <!-- Severity accent; collapsed for Info so the legacy single-text look is unchanged. -->
+            <Border x:Name="AccentBar"
+                    Grid.Column="0"
+                    Width="4"
+                    Margin="0,2,16,2"
+                    CornerRadius="2"
+                    Background="Transparent"
+                    VerticalAlignment="Stretch"
+                    Visibility="Collapsed" />
+            <!-- Icon is a fixed, built-in glyph selected from the bounded OsdIcon enum. -->
+            <TextBlock x:Name="IconText"
+                       Grid.Column="1"
+                       Visibility="Collapsed"
+                       Foreground="White"
+                       FontFamily="Segoe UI Symbol"
+                       FontSize="24"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0" />
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <!-- Optional headline for structured messages. -->
+                <TextBlock x:Name="TitleText"
+                           Visibility="Collapsed"
+                           Foreground="White"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,4" />
+                <!-- Body; for legacy text-only messages this reuses the title font (22 / SemiBold). -->
+                <TextBlock x:Name="MessageText"
+                           Foreground="White"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,41 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Local build output
+artifacts/
+dist/
+
+# Runtime data
+logs/
+*.log
+
+# Local agent state and research (kept locally, excluded from source control)
+.pi/
+research/
+
+# Test output and temporary runtime records
+TestResults/
+**/TestResults/
+*.trx
+*.etl
+*.dmp
+
+# Local credentials and private keys
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+*.pem
+credentials*
+secrets*
+
+# Local backups
+*.bak
+*.backup
+*.old
+*.orig
