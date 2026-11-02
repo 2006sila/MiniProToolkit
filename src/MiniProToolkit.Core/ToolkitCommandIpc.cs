@@ -6,6 +6,20 @@ using System.Text.Json.Serialization;
 namespace MiniProToolkit.Core;
 
 /// <summary>
+/// Why a relay attempt ended before the client handed over a single request byte. Both cases are pre-dispatch, so
+/// nothing was executed; they are kept apart because only one of them may be reported as "the main instance is
+/// busy": a pipe peer that fails the server-identity check is a refusal and must never be softened into "busy".
+/// </summary>
+public enum ToolkitCommandConnectFailure
+{
+    /// <summary>The connect window elapsed (or the channel broke) before a verified server accepted the connection.</summary>
+    Unreachable,
+
+    /// <summary>A pipe existed, but the connected peer is not the expected main instance, so no byte may be sent.</summary>
+    UntrustedServer
+}
+
+/// <summary>
 /// Wire status of one command exchange. The set is closed so the CLI never has to interpret free-form text:
 /// <see cref="Ok"/> means "the running instance executed the read-only query or the write and reported success",
 /// every other value is a failure that maps to a dedicated process exit code.
@@ -391,6 +405,10 @@ public static class ToolkitCommandIpcProtocol
     public static ToolkitCommandIpcResponse Failed(string requestId, ToolkitCommandAction action, string message) =>
         Build(ToolkitCommandIpcStatus.Failed, requestId, action, false, message, null);
 
+    /// <summary>
+    /// Answer for "the request was on the wire but no answer arrived in time". <see cref="ToolkitCommandIpcResponse.Executed"/>
+    /// is always false: the command may already have run, so the text asks the caller to confirm with <c>status</c>.
+    /// </summary>
     public static ToolkitCommandIpcResponse TimedOut(string requestId, ToolkitCommandAction action) =>
         Build(ToolkitCommandIpcStatus.TimedOut, requestId, action, false,
             "运行中的实例未在时限内完成该命令；命令可能已经执行，请用 status 复核。", null);
@@ -408,6 +426,41 @@ public static class ToolkitCommandIpcProtocol
 
     public static ToolkitCommandIpcResponse Unavailable(string requestId, ToolkitCommandAction action, string message) =>
         Build(ToolkitCommandIpcStatus.Unavailable, requestId, action, false, message, null);
+
+    /// <summary>Answer text for "no main instance could be found": exit code 4, nothing was sent.</summary>
+    public const string NoInstanceMessage =
+        "没有找到正在运行的主实例（MiniProToolkit 未启动，或命令通道未就绪），命令未执行。";
+
+    /// <summary>
+    /// Answer text for "another process holds the instance lock but its command pipe did not answer in time". The
+    /// instance is known to exist, so "not started" would be a false report; nothing was sent, so "may already have
+    /// executed" would be equally wrong. It therefore says "busy or temporarily unreachable" and that the command was
+    /// not sent, which keeps a retry safe.
+    /// </summary>
+    public const string BusyOrUnreachableMessage = "主实例忙或暂时无法连接，命令未发送；可稍后重试。";
+
+    /// <summary>
+    /// Classifies a failure that happened before any request byte was sent. Pure on purpose, so the exit-code contract
+    /// is testable without opening a pipe, starting the app or touching hardware.
+    /// <para>
+    /// An unreachable channel while another process holds the instance lock means the main instance exists but is busy
+    /// (or its channel is not ready): that is reported as <see cref="ToolkitCommandIpcStatus.TimedOut"/> (exit code 6,
+    /// never "no instance" 4) with the <see cref="BusyOrUnreachableMessage"/> text - and never as "may already have
+    /// executed", because no byte left this process. Without that lock evidence the answer stays "no instance" (exit
+    /// code 4); an untrusted peer is always refused (exit code 4) and never called "busy".
+    /// </para>
+    /// </summary>
+    public static ToolkitCommandIpcResponse ClassifyPreDispatchFailure(string requestId, ToolkitCommandAction action,
+        bool instanceKnownByLock = false,
+        ToolkitCommandConnectFailure failure = ToolkitCommandConnectFailure.Unreachable)
+    {
+        // A wrong server is a refusal, not a load signal: it must not disguise itself as "the real instance is busy".
+        if (failure == ToolkitCommandConnectFailure.UntrustedServer)
+            return Unavailable(requestId, action, NoInstanceMessage);
+        if (instanceKnownByLock)
+            return Build(ToolkitCommandIpcStatus.TimedOut, requestId, action, false, BusyOrUnreachableMessage, null);
+        return Unavailable(requestId, action, NoInstanceMessage);
+    }
 
     /// <summary>
     /// Answer for a duplicate request id whose first attempt is still running (or ended without an answer): the

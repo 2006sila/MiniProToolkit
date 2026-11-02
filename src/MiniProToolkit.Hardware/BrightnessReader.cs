@@ -9,9 +9,10 @@ namespace MiniProToolkit.Hardware;
 /// <c>WmiMonitorBrightness.CurrentBrightness</c>; writes use only the sibling
 /// <c>WmiMonitorBrightnessMethods.WmiSetBrightness</c> class and are enabled only
 /// when there is exactly one method instance and a current-brightness readback.
-/// All WMI calls run on one MTA worker with a bounded wait. A timed-out call is not
-/// cancelled or retried, and a write is never reported successful without matching
-/// <c>CurrentBrightness</c> readback.
+/// All WMI calls run on one MTA worker with a bounded wait, and every query additionally
+/// carries a hard WMI timeout so a wedged provider cannot pin that worker. A timed-out
+/// call is not cancelled or retried, and a write is never reported successful without
+/// matching <c>CurrentBrightness</c> readback.
 /// </summary>
 public sealed class BrightnessReader
 {
@@ -22,6 +23,13 @@ public sealed class BrightnessReader
     private const string SetMethod = "WmiSetBrightness";
     private const int MaximumStatusLength = 160;
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(3);
+
+    // Hard bound for every WMI query and enumeration step. A worker slot is only released
+    // when the operation returns, so an abandoned wait alone cannot free it: a wedged
+    // provider would otherwise hold the single-flight brightness slot forever. A timeout
+    // surfaces as a ManagementException and degrades to "unavailable", never to a write.
+    private static readonly TimeSpan WmiQueryTimeout = TimeSpan.FromSeconds(2);
+
     private static readonly SingleFlightOperationWorker SharedWorker = new(
         "MiniProToolkit-Wmi-Brightness", thread => thread.SetApartmentState(ApartmentState.MTA));
 
@@ -59,6 +67,19 @@ public sealed class BrightnessReader
             OperationTimeout);
     }
 
+    /// <summary>
+    /// Sole searcher factory: every brightness query is semi-synchronous and each
+    /// enumeration step is bounded by <see cref="WmiQueryTimeout"/> (the documented
+    /// <c>ManagementOptions.Timeout</c> behaviour). A stuck provider therefore fails the
+    /// query instead of pinning the brightness worker.
+    /// </summary>
+    private static ManagementObjectSearcher CreateSearcher(string query)
+    {
+        var searcher = new ManagementObjectSearcher(NamespacePath, query);
+        searcher.Options.Timeout = WmiQueryTimeout;
+        return searcher;
+    }
+
     private static BrightnessReading ReadCore() => ReadPanelCore()?.Reading
         ?? BrightnessReading.Unavailable(NoInstanceStatus);
 
@@ -66,7 +87,7 @@ public sealed class BrightnessReader
     {
         try
         {
-            using var searcher = new ManagementObjectSearcher(NamespacePath, BrightnessQuery);
+            using var searcher = CreateSearcher(BrightnessQuery);
             using var results = searcher.Get();
             var candidates = new List<BrightnessPanelCandidate>();
             foreach (ManagementObject instance in results)
@@ -136,7 +157,7 @@ public sealed class BrightnessReader
                     methodCount == 0 ? NoMethodStatus : AmbiguousMethodStatus,
                     RequestedPercent: percent);
 
-            using var searcher = new ManagementObjectSearcher(NamespacePath, MethodsQuery);
+            using var searcher = CreateSearcher(MethodsQuery);
             using var results = searcher.Get();
             if (results.Count != 1)
                 return new SystemControlWriteResult("brightness", SystemControlWriteState.Unavailable,
@@ -190,7 +211,7 @@ public sealed class BrightnessReader
     // LVDS/embedded DP/embedded UDI/INTERNAL connection types (D3DKMDT enum).
     private static bool IsBuiltInPanel(string targetInstanceName)
     {
-        using var searcher = new ManagementObjectSearcher(NamespacePath, ConnectionQuery);
+        using var searcher = CreateSearcher(ConnectionQuery);
         using var results = searcher.Get();
         var candidates = new List<BrightnessPanelCandidate>();
         foreach (ManagementObject instance in results)
@@ -206,7 +227,7 @@ public sealed class BrightnessReader
     private static int CountMethodInstances(string targetInstanceName)
     {
         var count = 0;
-        using var searcher = new ManagementObjectSearcher(NamespacePath, MethodsQuery);
+        using var searcher = CreateSearcher(MethodsQuery);
         using var results = searcher.Get();
         // Any extra method instance is ambiguous, even if one lookup fails or has
         // a different identifier. Never silently pick the first writable instance.

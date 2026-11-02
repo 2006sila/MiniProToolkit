@@ -120,11 +120,11 @@ public sealed class LibreHardwareMonitorCpuSensor : IDisposable
 
         try
         {
-            var sensors = CollectCpuSensors(computer);
+            var (sensors, traversal) = CollectCpuSensors(computer);
             if (sensors.Count == 0)
             {
                 _nextAttemptUtc = LhmRetryPolicy.Schedule(now, LhmRetryPolicy.NoCpuSensorDelay);
-                return _lastReading = new LhmCpuReading(null, null, DescribeNoCpuSensor());
+                return _lastReading = new LhmCpuReading(null, null, WithTraversalHint(DescribeNoCpuSensor(), traversal));
             }
 
             var temperature = LhmSensorSelector.SelectTemperature(sensors);
@@ -132,7 +132,7 @@ public sealed class LibreHardwareMonitorCpuSensor : IDisposable
             if (!temperature.IsSelected && !power.IsSelected)
             {
                 _nextAttemptUtc = LhmRetryPolicy.Schedule(now, LhmRetryPolicy.NoUsableSelectionDelay);
-                return _lastReading = new LhmCpuReading(null, null, DescribeNoSelection(temperature, power));
+                return _lastReading = new LhmCpuReading(null, null, WithTraversalHint(DescribeNoSelection(temperature, power), traversal));
             }
 
             _consecutiveFailures = 0;
@@ -140,7 +140,7 @@ public sealed class LibreHardwareMonitorCpuSensor : IDisposable
             return _lastReading = new LhmCpuReading(
                 temperature.Value,
                 power.Value,
-                DescribeReading(temperature, power));
+                WithTraversalHint(DescribeReading(temperature, power), traversal));
         }
         catch (Exception ex)
         {
@@ -194,16 +194,28 @@ public sealed class LibreHardwareMonitorCpuSensor : IDisposable
         _computer = null;
     }
 
-    private static List<LhmSensorValue> CollectCpuSensors(Computer computer)
+    /// <summary>
+    /// CPU-scoped sensor collection. The sub-hardware walk is iterative and bounded
+    /// (reference-identity visited set, one 256-node budget for the whole pass, depth
+    /// 8) so a broken driver cannot recurse forever or keep a sample busy for long.
+    /// A truncated walk still returns the values it found; the caller only adds a
+    /// status hint, so a partial read never becomes a fabricated 0 °C / 0 W value.
+    /// </summary>
+    private static (List<LhmSensorValue> Values, TreeWalkOutcome Traversal) CollectCpuSensors(Computer computer)
     {
         var values = new List<LhmSensorValue>();
+        var roots = new List<IHardware>();
         foreach (var hardware in computer.Hardware)
         {
-            if (hardware.HardwareType != HardwareType.Cpu)
-                continue;
-            CollectFrom(hardware, values);
+            if (hardware.HardwareType == HardwareType.Cpu)
+                roots.Add(hardware);
         }
-        return values;
+
+        var traversal = BoundedTreeWalk.Walk(
+            roots,
+            hardware => hardware.SubHardware,
+            (hardware, _) => CollectFrom(hardware, values));
+        return (values, traversal);
     }
 
     private static void CollectFrom(IHardware hardware, List<LhmSensorValue> values)
@@ -218,9 +230,19 @@ public sealed class LibreHardwareMonitorCpuSensor : IDisposable
                 continue;
             values.Add(new LhmSensorValue(sensor.Name, sensor.Value, category));
         }
+    }
 
-        foreach (var subHardware in hardware.SubHardware)
-            CollectFrom(subHardware, values);
+    // A bounded walk that hit a limit is spelled out in the existing status text
+    // instead of silently pretending the (possibly incomplete) sensor list is the
+    // whole CPU. The numbers stay whatever the sensors really returned.
+    private static string WithTraversalHint(string status, TreeWalkOutcome traversal)
+    {
+        if (!traversal.WasTruncated)
+            return status;
+        var cut = traversal.DepthLimitReached && traversal.NodeBudgetExhausted
+            ? "节点与深度"
+            : traversal.DepthLimitReached ? "深度" : "节点";
+        return Sanitize($"{status}（LHM 硬件遍历已触及{cut}上限：{traversal.VisitedNodes} 个节点，读数可能不完整）");
     }
 
     private static LhmSensorCategory MapCategory(SensorType sensorType) => sensorType switch

@@ -211,7 +211,7 @@ public sealed class CpuClassFrequencyTests
     public void StatusIsRedactedSingleLineAndBounded()
     {
         var reading = CpuClassFrequency.Calculate([Cpu(0, 0, 0), Cpu(1, 0, 1)], [],
-            "token=abc; C:\\Users\\private\\file\r\n" + new string('x', 300));
+            "token=abc; C:\\synthetic\\private\\file\r\n" + new string('x', 300));
         Assert.DoesNotContain("abc", reading.Status);
         Assert.DoesNotContain("private", reading.Status);
         Assert.DoesNotContain("\n", reading.Status);

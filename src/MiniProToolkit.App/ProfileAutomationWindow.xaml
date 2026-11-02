@@ -1,15 +1,30 @@
 <Window x:Class="MiniProToolkit.App.ProfileAutomationWindow"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="方案自动切换" Width="1020" Height="720" MinWidth="820" MinHeight="600" WindowStartupLocation="CenterOwner">
+ Title="方案自动切换" Width="1020" Height="720" MinWidth="820" MinHeight="600" WindowStartupLocation="CenterOwner" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
  <DockPanel Margin="16">
   <StackPanel DockPanel.Dock="Top">
-   <TextBlock Text="方案自动切换" FontSize="24" FontWeight="SemiBold"/>
-   <TextBlock Text="规则按优先级选择；相同优先级按名称稳定排序。默认关闭，切换有防抖时间，暂停后不会自动接管硬件。" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,10"/>
+   <TextBlock Text="方案自动切换" FontSize="22" FontWeight="SemiBold"/>
+   <TextBlock Text="规则按优先级选择；相同优先级按名称稳定排序。默认关闭，切换有防抖时间，暂停后不会自动接管硬件。" Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,10"/>
    <WrapPanel><CheckBox x:Name="EnabledCheck" Content="启用自动切换" Margin="0,0,12,0"/><CheckBox x:Name="PausedCheck" Content="暂停自动切换"/></WrapPanel>
-   <TextBlock x:Name="StatusSummaryText" Foreground="#555" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+   <TextBlock x:Name="StatusSummaryText" Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
   </StackPanel>
   <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
-   <TextBlock x:Name="FeedbackText" Foreground="#555" TextWrapping="Wrap" MinHeight="28"/>
+   <TextBlock x:Name="FeedbackText" Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" MinHeight="28"/>
    <WrapPanel HorizontalAlignment="Right"><Button Content="新建规则" Click="NewClick"/><Button Content="删除规则" Click="DeleteClick"/><Button Content="取消" IsCancel="True"/><Button Content="保存" Click="SaveClick" IsDefault="True"/></WrapPanel>
   </StackPanel>
   <TabControl AutomationProperties.Name="方案自动切换页面">
@@ -17,7 +32,7 @@
   <Grid>
    <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
    <ListBox x:Name="RulesList" AutomationProperties.Name="自动规则列表" SelectionChanged="SelectionChanged" Margin="0,0,12,0">
-    <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="4"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}" Foreground="#666" TextWrapping="Wrap" FontSize="11"/><TextBlock Text="{Binding Status}" Foreground="#8A6D3B" TextWrapping="Wrap" FontSize="11" Visibility="{Binding StatusVisibility}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+    <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="4"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}" Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" FontSize="11"/><TextBlock Text="{Binding Status}" Foreground="{StaticResource ObsidianWarningBrush}" TextWrapping="Wrap" FontSize="11" Visibility="{Binding StatusVisibility}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
    </ListBox>
    <Grid Grid.Column="1">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -29,8 +44,8 @@
     <WrapPanel Grid.Row="8" VerticalAlignment="Top" Margin="0,8,0,0"><TextBlock Text="开始 HH:mm" VerticalAlignment="Center"/><TextBox x:Name="StartText" AutomationProperties.Name="开始时间" Width="70" Margin="5,0,16,0"/><TextBlock Text="结束 HH:mm（24:00 可用）" VerticalAlignment="Center"/><TextBox x:Name="EndText" AutomationProperties.Name="结束时间" Width="80" Margin="5,0,0,0"/></WrapPanel>
     <WrapPanel Grid.Row="9" VerticalAlignment="Top" Margin="0,12,0,0"><TextBlock Text="进程路径（可选，完整路径）" VerticalAlignment="Center"/><TextBox x:Name="ProcessPathText" AutomationProperties.Name="可选进程完整路径" Width="330" Margin="5,0,0,0" ToolTip="例如 C:\Apps\player.exe；留空表示不限制路径。只接受盘符或 UNC 完整路径。"/></WrapPanel>
     <WrapPanel Grid.Row="10" VerticalAlignment="Top" Margin="0,8,0,0"><TextBlock Text="命令行包含" VerticalAlignment="Center"/><TextBox x:Name="ProcessCommandLineText" AutomationProperties.Name="命令行包含条件" Width="150" Margin="5,0,16,0" ToolTip="命令行子串，留空表示不限制；与命令行正则只能填一个。"/><TextBlock Text="命令行正则" VerticalAlignment="Center"/><TextBox x:Name="ProcessCommandLineRegexText" AutomationProperties.Name="命令行正则条件" Width="150" Margin="5,0,0,0" ToolTip="不区分大小写的正则，留空表示不限制；与子串只能填一个。"/></WrapPanel>
-    <TextBlock Grid.Row="11" Margin="0,6,0,0" FontSize="11" Foreground="#666" TextWrapping="Wrap" Text="路径与命令行条件只对「指定进程启动/退出」生效；子串与正则只能填一个，正则无效时保存会被拒绝。命令行只在内存中用于匹配，不写入日志或诊断。"/>
-    <TextBlock x:Name="RuleStatusText" Grid.Row="12" VerticalAlignment="Top" Margin="0,10,0,0" FontSize="11" Foreground="#8A6D3B" TextWrapping="Wrap"/>
+    <TextBlock Grid.Row="11" Margin="0,6,0,0" FontSize="11" Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Text="路径与命令行条件只对「指定进程启动/退出」生效；子串与正则只能填一个，正则无效时保存会被拒绝。命令行只在内存中用于匹配，不写入日志或诊断。"/>
+    <TextBlock x:Name="RuleStatusText" Grid.Row="12" VerticalAlignment="Top" Margin="0,10,0,0" FontSize="11" Foreground="{StaticResource ObsidianWarningBrush}" TextWrapping="Wrap"/>
    </Grid>
   </Grid>
    </TabItem>

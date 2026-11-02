@@ -15,8 +15,12 @@
 AppId={{8B07DA31-E0A5-4B64-A8DD-3C0B2A1DCD74}}
 AppName={#ProductName}
 AppVersion={#AppVersion}
+; Stamp the shell version resource from the same single version source as AppVersion and the
+; payload, so Explorer's File version / Product version are 0.1.0 (not the 0.0.0.0 default of
+; an Inno Setup build that only sets AppVersion).
+VersionInfoVersion={#AppVersion}
+VersionInfoTextVersion={#AppVersion}
 AppPublisher=MiniProToolkit
-LicenseFile=..\LICENSE
 DefaultDirName={autopf}\MiniProToolkit
 DefaultGroupName=MiniProToolkit
 UsedUserAreasWarning=no

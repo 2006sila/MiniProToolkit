@@ -273,9 +273,34 @@ public sealed class ProfileAutomationStore
             // shape. Older supported versions stay readable, future ones still fall back.
             if (doc.Version is { } version && version is < 1 or > CurrentVersion) throw new InvalidDataException("不支持的自动规则版本。");
             var settings = new ProfileAutomationSettings(doc.Enabled, doc.Paused, doc.Rules);
-            settings.Validate(names);
-            if (skipped.Count > 0) warning = DescribeSkippedTriggers(skipped);
-            return settings;
+            // Structural validation runs first and without the profile list, so every other problem
+            // (bad priority, duplicate name, unusable condition, bad trigger payload...) keeps rejecting
+            // the whole file even when an orphaned rule is present. Only a rule that is valid apart from
+            // referencing a deleted profile is excluded, and only that single rule.
+            settings.Validate();
+            var kept = new List<ProfileAutomationRule>(settings.Rules.Count);
+            var orphans = new List<ProfileAutomationRule>();
+            foreach (var rule in settings.Rules)
+            {
+                // A null profile list means "do not check profiles" (same as rule validation): every rule
+                // is kept, so this path can never turn into a silent mass-drop.
+                if (names is null || names.Contains(rule.ProfileName, StringComparer.OrdinalIgnoreCase)) kept.Add(rule);
+                else orphans.Add(rule);
+            }
+            if (orphans.Count == 0)
+            {
+                settings.Validate(names);
+                if (skipped.Count > 0) warning = DescribeSkippedTriggers(skipped);
+                return settings;
+            }
+            // Deleting one profile must never hand control to the next matching rule, so the surviving
+            // rules are returned with every field (and Paused) intact but automation forced off until the
+            // user reviews the file. Nothing is written back here: the stored file stays untouched.
+            var orphanNames = orphans.Select(rule => SanitizeName(rule.Name)).ToArray();
+            warning = skipped.Count > 0
+                ? DescribeSkippedTriggersAndOrphanProfiles(skipped, orphanNames, kept.Count)
+                : DescribeOrphanProfiles(orphanNames, kept.Count);
+            return new ProfileAutomationSettings(false, settings.Paused, kept);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or ArgumentException) { warning = $"自动规则已回退默认：{ex.Message}"; return ProfileAutomationSettings.Default; }
     }
@@ -321,18 +346,32 @@ public sealed class ProfileAutomationStore
         return null;
     }
 
-    private static string SafeRuleName(JsonObject rule)
+    private static string SafeRuleName(JsonObject rule) => SanitizeName(
+        FindProperty(rule, "name") is JsonValue value && value.TryGetValue<string>(out var name) ? name : null);
+
+    /// <summary>Rule display names only: control characters are stripped and the text is truncated, so a stored
+    /// name can never break or bloat a log line. Never applied to paths, command lines or patterns.</summary>
+    private static string SanitizeName(string? text)
     {
-        var text = FindProperty(rule, "name") is JsonValue value && value.TryGetValue<string>(out var name) ? name.Trim() : string.Empty;
-        var safe = new string(text.Where(c => !char.IsControl(c)).Take(64).ToArray());
+        var safe = new string((text ?? string.Empty).Trim().Where(c => !char.IsControl(c)).Take(64).ToArray());
         return safe.Length == 0 ? "(未命名)" : safe;
     }
 
-    private static string DescribeSkippedTriggers(IReadOnlyList<string> names)
+    private static string DescribeSkippedTriggers(IReadOnlyList<string> names) =>
+        $"自动规则已跳过 {names.Count} 条触发条件不受支持的规则（{ListNames(names)}），其余规则已正常加载。";
+
+    private static string DescribeOrphanProfiles(IReadOnlyList<string> names, int keptCount) =>
+        $"自动规则已跳过 {names.Count} 条引用不存在方案的规则（{ListNames(names)}），其余 {keptCount} 条规则已保留，但自动切换已关闭，请复核后重新启用。";
+
+    private static string DescribeSkippedTriggersAndOrphanProfiles(
+        IReadOnlyList<string> skippedTriggers, IReadOnlyList<string> orphanNames, int keptCount) =>
+        $"自动规则已跳过 {skippedTriggers.Count} 条触发条件不受支持的规则（{ListNames(skippedTriggers)}）和 {orphanNames.Count} 条引用不存在方案的规则（{ListNames(orphanNames)}），其余 {keptCount} 条规则已保留，但自动切换已关闭，请复核后重新启用。";
+
+    private static string ListNames(IReadOnlyList<string> names)
     {
         var listed = string.Join("、", names.Take(MaxReportedRuleNames));
         var more = names.Count > MaxReportedRuleNames ? $" 等 {names.Count} 条" : string.Empty;
-        return $"自动规则已跳过 {names.Count} 条触发条件不受支持的规则（{listed}{more}），其余规则已正常加载。";
+        return listed + more;
     }
     public void Save(ProfileAutomationSettings settings, IReadOnlyCollection<string> names)
     {

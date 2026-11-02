@@ -6,7 +6,22 @@
         Height="900"
         MinWidth="680"
         MinHeight="700"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <DockPanel Margin="16">
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button AutomationProperties.Name="关闭设置与诊断" Content="关闭" Click="CloseClick" IsCancel="True" />
@@ -15,7 +30,7 @@
         <StackPanel>
             <TextBlock Text="设置与诊断" FontSize="22" FontWeight="SemiBold" />
             <TextBlock Text="这里显示当前权限、Guardian、租约、日志和历史记录路径。诊断读取不会写入硬件；系统控制仅由“设置并读回”按钮显式触发。"
-                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="170" />
@@ -53,7 +68,7 @@
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,14,0,4">
                 <TextBlock Text="产品硬件能力" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <Button AutomationProperties.Name="只读探测产品硬件能力" Content="只读探测" Click="ProbeCapabilitiesClick" Margin="10,0,0,0" />
+                <Button x:Name="ProbeCapabilitiesButton" AutomationProperties.Name="只读探测产品硬件能力" Content="只读探测" Click="ProbeCapabilitiesClick" Margin="10,0,0,0" />
             </StackPanel>
             <TextBox x:Name="CapabilitiesText" AutomationProperties.Name="产品硬件能力只读报告" Height="95" IsReadOnly="True" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="尚未探测。" />
@@ -64,7 +79,7 @@
             <TextBox x:Name="SystemIndicatorsText" AutomationProperties.Name="系统指示只读报告" Height="95" IsReadOnly="True" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="尚未读取。" />
             <TextBlock Text="CapsLock/NumLock 取键盘当前切换状态（UI 线程）；内建屏幕亮度与默认输出音量、默认麦克风静音在后台线程读取。Caps/Num 保持只读。"
-                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0" />
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
             <StackPanel Orientation="Horizontal" Margin="0,14,0,4">
                 <TextBlock Text="系统控制（显式写入）" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <Button x:Name="ProbeSystemControlsButton" AutomationProperties.Name="检查系统控制可用性，不写入" Content="检查可用性（不写入）" Click="ProbeSystemControlsClick" Margin="10,0,0,0" />
@@ -99,7 +114,7 @@
             <TextBox x:Name="SystemControlsText" AutomationProperties.Name="系统控制与读回结果只读报告" Height="70" IsReadOnly="True" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Text="控制尚未检查；不会自动写入真实硬件。" />
             <TextBlock Text="所有写入均由上方按钮显式触发，在后台线程执行一次并读回确认；写入错误、超时、实例歧义或读回不匹配都不会显示为成功。"
-                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0" />
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
             <TextBlock Text="最近诊断" FontWeight="SemiBold" Margin="0,12,0,4" />
             <TextBox x:Name="RecentText" AutomationProperties.Name="最近诊断只读报告" Height="125" IsReadOnly="True" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />

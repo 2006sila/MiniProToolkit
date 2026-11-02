@@ -148,7 +148,7 @@ public sealed class TelemetryHistoryTests
         Directory.CreateDirectory(directory);
         try
         {
-            var record = Record(DateTimeOffset.UtcNow, eventName: "profile: Quiet, Office", error: "token=private-value at C:\\Users\\Alice\\private.log");
+            var record = Record(DateTimeOffset.UtcNow, eventName: "profile: Quiet, Office", error: "token=private-value at C:\\synthetic\\Alice\\private.log");
             var events = new[] { new HistoryEvent(record.Timestamp, HistoryEventKind.Control, "方案,切换 token=event-secret", "应用") };
             var csv = Path.Combine(directory, "history.csv");
             var jsonl = Path.Combine(directory, "history.jsonl");
@@ -169,7 +169,7 @@ public sealed class TelemetryHistoryTests
     [Fact]
     public void DiagnosticRedactorRemovesSecretsAndLocalPaths()
     {
-        var input = "token=abc123 Authorization: Bearer secret-value file=C:\\Users\\Alice\\private.log \\\\server\\share\\x";
+        var input = "token=abc123 Authorization: Bearer secret-value file=C:\\synthetic\\Alice\\private.log \\\\server\\share\\x";
         var output = DiagnosticRedactor.Redact(input);
         Assert.DoesNotContain("abc123", output);
         Assert.DoesNotContain("secret-value", output);

@@ -187,19 +187,56 @@ public sealed class TelemetryRecorder : IDisposable
     private TelemetryRetentionSettings _retention = new();
     private DateTimeOffset _nextSettingsRefresh;
     public string? RetentionWarning { get; private set; }
+
+    /// <summary>
+    /// False when the on-disk retention settings could not be read/validated, so the writer runs on
+    /// fail-closed defaults. While false no archive is ever deleted and none is renamed: the
+    /// periodic cleanup plan is skipped and an append that would need rotation is refused
+    /// (<see cref="Append"/>) instead of dropping the tail archive.
+    /// </summary>
+    public bool RetentionTrusted { get; private set; } = true;
     private readonly string _jsonlPath;
     private readonly string _csvPath;
     private bool _disposed;
 
-    public TelemetryRecorder(string? directory = null)
+    // Stamp of the CSV content this instance last validated (or wrote). The header line is
+    // only read again when the current on-disk stamp differs, so steady-state appends do no
+    // extra read. Any external write, append, truncate, delete or rename changes at least one
+    // component and forces a fresh header check; a first append always checks. Length+mtime
+    // cannot detect a deliberate same-stamp replacement, which is a separate threat from the
+    // path/link checks that still run on every append.
+    private CsvStamp? _verifiedCsvStamp;
+    private int _csvHeaderReads;
+    private readonly Action<string, string> _appendCsvLine;
+
+    private readonly record struct CsvStamp(long Length, DateTime LastWriteTimeUtc, DateTime CreationTimeUtc)
     {
+        public static CsvStamp From(FileInfo info) => new(info.Length, info.LastWriteTimeUtc, info.CreationTimeUtc);
+    }
+
+    public TelemetryRecorder(string? directory = null)
+        : this(directory, static (path, line) => File.AppendAllText(path, line, Encoding.UTF8))
+    {
+    }
+
+    /// <summary>
+    /// Test seam for the CSV append itself: lets a test inject an external delete/truncate/replace
+    /// exactly between the pre-append check and the write without relying on timing races.
+    /// </summary>
+    internal TelemetryRecorder(string? directory, Action<string, string> appendCsvLine)
+    {
+        ArgumentNullException.ThrowIfNull(appendCsvLine);
         Directory = directory ?? System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "MiniProToolkit",
             "history");
         _jsonlPath = System.IO.Path.Combine(Directory, "telemetry.jsonl");
         _csvPath = System.IO.Path.Combine(Directory, "telemetry.csv");
+        _appendCsvLine = appendCsvLine;
     }
+
+    /// <summary>Number of CSV header lines actually read back from disk (diagnostics/tests only).</summary>
+    internal int CsvHeaderValidationCount => _csvHeaderReads;
 
     public string Directory { get; }
     public string JsonlPath => _jsonlPath;
@@ -218,19 +255,55 @@ public sealed class TelemetryRecorder : IDisposable
                     throw new IOException("历史文件不能是链接。");
             if (DateTimeOffset.UtcNow >= _nextSettingsRefresh)
             {
-                _retention = new TelemetryRetentionSettingsStore(Directory).Load(out var warning);
+                var store = new TelemetryRetentionSettingsStore(Directory);
+                _retention = store.Load(out var warning, out var trusted);
                 RetentionWarning = warning;
+                RetentionTrusted = trusted;
                 _nextSettingsRefresh = DateTimeOffset.UtcNow.AddSeconds(60);
-                TelemetryMaintenance.Execute(TelemetryMaintenance.Plan(Directory, _retention, DateTimeOffset.UtcNow));
+                // Fail closed: the fallback defaults are not the user's policy, so running the
+                // cleanup plan on them would delete archives the user still wants (P0 data loss).
+                if (trusted)
+                    TelemetryMaintenance.Execute(TelemetryMaintenance.Plan(Directory, _retention, DateTimeOffset.UtcNow));
             }
-            EnsureCsvSchema();
+            // Untrusted policy: never rotate (which deletes the tail archive) and never delete via
+            // the cleanup plan. Refuse the write with an actionable error instead, leaving all
+            // files untouched and keeping the growth bounded by the size cap.
+            if (!RetentionTrusted) EnsureRotationIsAllowed();
+            var csvInfo = EnsureCsvSchema();
             RotateIfNeeded(_jsonlPath);
-            RotateIfNeeded(_csvPath);
-            File.AppendAllText(_jsonlPath,
-                JsonSerializer.Serialize(record, JsonOptions) + Environment.NewLine,
-                Encoding.UTF8);
-            EnsureCsvHeader();
-            File.AppendAllText(_csvPath, ToCsv(record) + Environment.NewLine, Encoding.UTF8);
+            var csvRotated = RotateIfNeeded(_csvPath, csvInfo);
+            // Rotation moves the validated file away: the new CSV must get its header before
+            // the first data row, and the cached stamp must never describe the old file.
+            if (csvRotated) WriteCsvHeader();
+            try
+            {
+                File.AppendAllText(_jsonlPath,
+                    JsonSerializer.Serialize(record, JsonOptions) + Environment.NewLine,
+                    Encoding.UTF8);
+            }
+            catch
+            {
+                // A partial write leaves the stamped state unknown; the next append revalidates.
+                _verifiedCsvStamp = null;
+                throw;
+            }
+            // The CSV can be externally deleted, truncated, replaced or rotated between the
+            // schema check above and this write. Re-check right before appending so a headerless
+            // row is never produced on the normal path, then authenticate the post-write length
+            // so a race that still happens can never leave a poisoned (always-matching) stamp.
+            var expectedCsvLength = PrepareCsvAppend();
+            var csvLine = ToCsv(record) + Environment.NewLine;
+            var appendedBytes = Encoding.UTF8.GetByteCount(csvLine);
+            try
+            {
+                _appendCsvLine(_csvPath, csvLine);
+            }
+            catch
+            {
+                _verifiedCsvStamp = null;
+                throw;
+            }
+            AuthenticateCsvStamp(expectedCsvLength, appendedBytes);
         }
     }
 
@@ -242,12 +315,13 @@ public sealed class TelemetryRecorder : IDisposable
         }
     }
 
-    private void RotateIfNeeded(string path)
+    private bool RotateIfNeeded(string path, FileInfo? knownInfo = null)
     {
         var maximumBytes = _retention.MaximumFileBytes;
         var retainedFiles = _retention.RetainedArchiveCount;
-        if (!File.Exists(path) || new FileInfo(path).Length < maximumBytes)
-            return;
+        var info = knownInfo ?? new FileInfo(path);
+        if (!info.Exists || info.Length < maximumBytes)
+            return false;
 
         // Refuse link targets, including archive destinations used by rotation.
         for (var index = 1; index <= retainedFiles; index++)
@@ -263,27 +337,139 @@ public sealed class TelemetryRecorder : IDisposable
                 File.Move(source, $"{path}.{index + 1}", true);
         }
         File.Move(path, $"{path}.1", true);
+        if (string.Equals(path, _csvPath, StringComparison.OrdinalIgnoreCase)) _verifiedCsvStamp = null;
+        return true;
     }
 
-    private void EnsureCsvSchema()
+    /// <summary>
+    /// Fail-closed guard for an untrusted retention policy. Rotation is the only writer path that
+    /// deletes an archive (<c>.N</c> is dropped while the ring shifts), so with an unreadable
+    /// configuration the append is refused instead of silently deleting history: the active files
+    /// are left byte-for-byte untouched and the telemetry write stops at the size cap (bounded, no
+    /// unbounded growth) until the user re-saves a valid retention setting.
+    /// </summary>
+    private void EnsureRotationIsAllowed()
     {
-        if (!File.Exists(_csvPath) || new FileInfo(_csvPath).Length == 0) return;
+        foreach (var path in new[] { _jsonlPath, _csvPath })
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length < _retention.MaximumFileBytes) continue;
+            throw new IOException(
+                $"历史保留配置不可用（{TelemetryRetentionSettingsStore.FileName} 无法读取或无效），" +
+                $"而 {Path.GetFileName(path)} 已达到 {_retention.MaximumFileBytes} 字节上限；为避免删除归档，本次遥测写入已跳过，" +
+                "文件未做任何改动。请打开历史窗口确认并重新保存保留设置，保存后自动恢复写入。");
+        }
+    }
+
+    /// <summary>
+    /// Validates the CSV header, reusing one <see cref="FileInfo"/> for the size check and the
+    /// cache decision. Returns the current file info (null when a header was just written) so
+    /// the caller can reuse it for the size-based rotation check instead of re-statting.
+    /// </summary>
+    private FileInfo? EnsureCsvSchema()
+    {
+        var info = new FileInfo(_csvPath);
+        if (!info.Exists || info.Length == 0)
+        {
+            WriteCsvHeader();
+            return null;
+        }
+        var stamp = CsvStamp.From(info);
+        if (_verifiedCsvStamp == stamp) return info;
         string? header;
-        using (var reader = new StreamReader(_csvPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+        try
+        {
+            _csvHeaderReads++;
+            using var reader = new StreamReader(_csvPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             header = reader.ReadLine();
-        if (header == CsvHeader) return;
+        }
+        catch
+        {
+            _verifiedCsvStamp = null;
+            throw;
+        }
+        if (header == CsvHeader)
+        {
+            _verifiedCsvStamp = stamp;
+            return info;
+        }
         // Keep incompatible history intact. Rotation remains size-based for files of this schema.
+        _verifiedCsvStamp = null;
         var archive = $"{_csvPath}.schema-{DateTimeOffset.UtcNow:yyyyMMddTHHmmssfff}-{Guid.NewGuid():N}.bak";
         File.Move(_csvPath, archive);
+        WriteCsvHeader();
+        return null;
     }
 
-    private void EnsureCsvHeader()
+    private void WriteCsvHeader()
     {
-        if (File.Exists(_csvPath) && new FileInfo(_csvPath).Length > 0)
-            return;
-        File.WriteAllText(_csvPath,
-            CsvHeader + Environment.NewLine,
-            Encoding.UTF8);
+        try
+        {
+            File.WriteAllText(_csvPath,
+                CsvHeader + Environment.NewLine,
+                Encoding.UTF8);
+        }
+        catch
+        {
+            _verifiedCsvStamp = null;
+            throw;
+        }
+        UpdateCsvStamp();
+    }
+
+    private void UpdateCsvStamp()
+    {
+        try
+        {
+            var info = new FileInfo(_csvPath);
+            _verifiedCsvStamp = info.Exists ? CsvStamp.From(info) : null;
+        }
+        catch
+        {
+            _verifiedCsvStamp = null;
+        }
+    }
+
+    /// <summary>
+    /// Re-checks the CSV immediately before the data row is appended and returns the file length
+    /// the row is expected to be appended to. A file that vanished or was truncated gets its
+    /// header restored; a file whose stamp no longer matches the validated one is revalidated
+    /// (which may archive an externally replaced, incompatible header).
+    /// </summary>
+    private long PrepareCsvAppend()
+    {
+        var info = new FileInfo(_csvPath);
+        if (info.Exists && info.Length > 0)
+        {
+            if (_verifiedCsvStamp == CsvStamp.From(info)) return info.Length;
+            // External append/rewrite since validation: validate this exact content again.
+            EnsureCsvSchema();
+            info = new FileInfo(_csvPath);
+            if (info.Exists && info.Length > 0) return info.Length;
+        }
+        WriteCsvHeader();
+        return new FileInfo(_csvPath).Length;
+    }
+
+    /// <summary>
+    /// Only trusts the post-write stamp when the file grew by exactly the appended UTF-8 bytes
+    /// on top of the length that was valid before the write. Anything else (external delete that
+    /// let AppendAllText create a headerless file, truncate, concurrent append, BOM on recreate)
+    /// invalidates the cache so the next append re-reads the header instead of staying poisoned.
+    /// </summary>
+    private void AuthenticateCsvStamp(long expectedLength, int appendedBytes)
+    {
+        try
+        {
+            var info = new FileInfo(_csvPath);
+            _verifiedCsvStamp = info.Exists && info.Length == expectedLength + appendedBytes
+                ? CsvStamp.From(info)
+                : null;
+        }
+        catch
+        {
+            _verifiedCsvStamp = null;
+        }
     }
 
     public static string ToCsv(HardwareTelemetryRecord record) => string.Join(",",

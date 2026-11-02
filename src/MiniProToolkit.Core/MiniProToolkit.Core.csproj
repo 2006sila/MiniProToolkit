@@ -5,4 +5,9 @@
     <Nullable>enable</Nullable>
     <RootNamespace>MiniProToolkit.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Internal header-read counters/stamps are asserted by the Core test project only; no
+         public diagnostic API is exposed. -->
+    <InternalsVisibleTo Include="MiniProToolkit.Core.Tests" />
+  </ItemGroup>
 </Project>

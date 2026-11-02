@@ -23,6 +23,8 @@ public partial class FanProfileManagerWindow : Window
         _calibration = calibration ?? FanCalibration.Default;
         _snapshotSource = snapshotSource;
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         _profiles = new(profiles);
         ProfilesList.ItemsSource = _profiles;
         ProfilesList.SelectedIndex = Math.Max(0, _profiles.ToList().FindIndex(p => p.Name == selectedName));

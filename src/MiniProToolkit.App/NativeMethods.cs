@@ -18,12 +18,18 @@ internal static class NativeMethods
     internal const int WsClipSiblings = 0x04000000;
     internal const int WsExNoActivate = 0x08000000;
     internal const int WsExToolWindow = 0x00000080;
+    // WS_EX_TRANSPARENT: mouse input passes through the window (desktop floating card click-through).
+    // Only this bit and WS_EX_NOACTIVATE are ever toggled by that feature; every other extended style
+    // bit is preserved (see FloatingStatusInteraction).
+    internal const int WsExTransparent = 0x00000020;
     internal const uint WmHotKey = 0x0312;
     internal const uint SwpNoActivate = 0x0010;
     internal const uint SwpNoZOrder = 0x0004;
     internal const uint SwpShowWindow = 0x0040;
     internal const uint SwpFrameChanged = 0x0020;
     internal static readonly IntPtr HwndTopmost = new(-1);
+    // HWND_NOTOPMOST, used by the desktop floating card when the user turns 总在最前 off.
+    internal static readonly IntPtr HwndNoTopmost = new(-2);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -134,6 +140,11 @@ internal static class NativeMethods
         IntPtr value);
 
     [DllImport("user32.dll", SetLastError = true)]
+    internal static extern IntPtr GetWindowLongPtr(
+        IntPtr windowHandle,
+        int index);
+
+    [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool SetWindowPos(
         IntPtr windowHandle,
         IntPtr insertAfter,
@@ -222,13 +233,25 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern uint GetDpiForWindow(IntPtr windowHandle);
 
+    /// <summary>
+    /// Enumerates the primary shell taskbar (<c>Shell_TrayWnd</c>) only. Secondary taskbars
+    /// (<c>Shell_SecondaryTrayWnd</c>) are deliberately not returned: <c>ABM_GETTASKBARPOS</c> only
+    /// answers for the primary appbar, so asking it for a secondary handle yields the primary
+    /// rectangle and every such overlay would land on the primary screen - the duplicated-overlay
+    /// bug. The product supports exactly one taskbar overlay on the one supported taskbar; the
+    /// independent desktop floating card still clamps to its own monitor work area and is not
+    /// affected by this filter. No secondary window is created or reparented here.
+    /// </summary>
     internal static IEnumerable<IntPtr> EnumerateTaskbars()
     {
         var result = new List<IntPtr>();
         EnumWindows((windowHandle, _) =>
         {
             var className = GetClassName(windowHandle);
-            if (className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
+            // Primary taskbar only. The shell class name is the whole filter: no display/monitor
+            // probing happens during enumeration, and ABM_GETTASKBARPOS stays the single placement
+            // API for the one handle that is actually returned.
+            if (className == "Shell_TrayWnd")
                 result.Add(windowHandle);
             return true;
         }, IntPtr.Zero);

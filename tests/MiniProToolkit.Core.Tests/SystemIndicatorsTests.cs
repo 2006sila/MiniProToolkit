@@ -126,10 +126,10 @@ public sealed class SystemIndicatorsTests
     [Fact]
     public void StatusTextIsRedactedAndTruncated()
     {
-        var withPath = BrightnessReading.Unavailable(@"C:\Users\someone\App.log 读取失败");
+        var withPath = BrightnessReading.Unavailable(@"C:\synthetic\someone\App.log 读取失败");
         var text = SystemIndicatorText.Brightness(withPath);
 
-        Assert.DoesNotContain(@"C:\Users", text);
+        Assert.DoesNotContain(@"C:\synthetic", text);
         Assert.Contains("[LOCAL_PATH]", text);
 
         var longStatus = AudioVolumeReading.Unavailable(new string('x', 400));

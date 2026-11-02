@@ -123,10 +123,10 @@ public sealed class OsdNotificationsTests
     public void FailureDetailsAreRedactedAndBounded()
     {
         var message = OsdEvents.GuardianRecoveryFailed(
-            @"EC 写入失败 C:\Users\someone\AppData\Local\MiniProToolkit\curve.json 以及 " + new string('x', 400),
+            @"EC 写入失败 C:\synthetic\someone\AppData\Local\MiniProToolkit\curve.json 以及 " + new string('x', 400),
             Sample);
 
-        Assert.DoesNotContain("C:\\Users", message.Body);
+        Assert.DoesNotContain("C:\\synthetic", message.Body);
         Assert.Contains("[LOCAL_PATH]", message.Body);
         Assert.True(OsdEvents.SafeText(new string('y', 400))!.Length <= OsdEvents.MaxDetailLength);
     }

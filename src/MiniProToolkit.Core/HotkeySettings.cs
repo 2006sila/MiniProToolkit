@@ -17,7 +17,11 @@ public enum HotkeyAction
     BalanceMode = 1,
     PerformanceMode = 2,
     AutomaticMode = 3,
-    FullSpeed = 4
+    FullSpeed = 4,
+    // Second phase: display-only actions of the standalone desktop floating window. They are
+    // appended so the five original values - and therefore their registration ids - never change.
+    ToggleFloatingStatus = 5,
+    DisableFloatingClickThrough = 6
 }
 
 /// <summary>Modifier bits, kept equal to the Win32 <c>MOD_*</c> values so no translation table is needed.</summary>
@@ -209,9 +213,13 @@ public sealed record HotkeyBinding(HotkeyAction Action, HotkeyGesture Gesture);
 public sealed record HotkeySettings(IReadOnlyList<HotkeyBinding> Bindings)
 {
     /// <summary>
-    /// The compatible defaults (<c>Ctrl+Alt+1/2/3/A/F</c>). A settings file from before rebinding
-    /// existed, a missing field or a missing action all resolve to these, so nobody loses a working
-    /// hotkey because of the new feature.
+    /// The compatible defaults (<c>Ctrl+Alt+1/2/3/A/F</c> for the five original control actions and
+    /// <c>Ctrl+Alt+F9</c> / <c>Ctrl+Alt+F10</c> for the two desktop-floating display actions). A
+    /// settings file from before rebinding existed, a missing field or a missing action all resolve to
+    /// these, so nobody loses a working hotkey because of the new feature. The two appended actions are
+    /// last in the enum, so an old file's user bindings are read first and win any collision; only when
+    /// a user already owns <c>Ctrl+Alt+F9</c>/<c>F10</c> does the loader move the new action to the first
+    /// free <c>Ctrl+Alt</c> combination instead.
     /// </summary>
     public static HotkeySettings Default { get; } = CreateDefault();
 
@@ -221,7 +229,9 @@ public sealed record HotkeySettings(IReadOnlyList<HotkeyBinding> Bindings)
         new HotkeyBinding(HotkeyAction.BalanceMode, HotkeyGesture.CtrlAlt("2")),
         new HotkeyBinding(HotkeyAction.PerformanceMode, HotkeyGesture.CtrlAlt("3")),
         new HotkeyBinding(HotkeyAction.AutomaticMode, HotkeyGesture.CtrlAlt("A")),
-        new HotkeyBinding(HotkeyAction.FullSpeed, HotkeyGesture.CtrlAlt("F"))
+        new HotkeyBinding(HotkeyAction.FullSpeed, HotkeyGesture.CtrlAlt("F")),
+        new HotkeyBinding(HotkeyAction.ToggleFloatingStatus, HotkeyGesture.CtrlAlt("F9")),
+        new HotkeyBinding(HotkeyAction.DisableFloatingClickThrough, HotkeyGesture.CtrlAlt("F10"))
     ]);
 
     /// <summary>Gesture bound to <paramref name="action"/>; the defaults are complete, so this always resolves.</summary>
@@ -273,6 +283,8 @@ public sealed record HotkeySettings(IReadOnlyList<HotkeyBinding> Bindings)
         HotkeyAction.PerformanceMode => "性能模式",
         HotkeyAction.AutomaticMode => "EC 自动",
         HotkeyAction.FullSpeed => "满速",
+        HotkeyAction.ToggleFloatingStatus => "显示/隐藏桌面悬浮窗",
+        HotkeyAction.DisableFloatingClickThrough => "关闭悬浮窗鼠标穿透",
         _ => action.ToString()
     };
 }
@@ -327,6 +339,19 @@ public sealed class HotkeySettingsStore
         "MiniProToolkit",
         "hotkeys.json");
 
+    /// <summary>
+    /// The five actions every existing <c>hotkeys.json</c> can contain. A missing one of these is
+    /// reported; a missing newer action is just the documented migration default.
+    /// </summary>
+    private static readonly HotkeyAction[] LegacyActions =
+    [
+        HotkeyAction.SilenceMode,
+        HotkeyAction.BalanceMode,
+        HotkeyAction.PerformanceMode,
+        HotkeyAction.AutomaticMode,
+        HotkeyAction.FullSpeed
+    ];
+
     public string Path { get; }
 
     public HotkeySettings LoadOrDefault(out string? warning)
@@ -346,8 +371,13 @@ public sealed class HotkeySettingsStore
             var actions = Enum.GetValues<HotkeyAction>();
             var notes = new List<string>();
             var stored = ReadBindings(document, notes);
-            if (document.Bindings is not null && stored.Count < actions.Length)
-                notes.Add($"{actions.Length - stored.Count} 个动作没有可用的快捷键配置，已使用默认或避让组合");
+            // Only the actions of the first hotkeys schema are counted here. A file written before the
+            // two desktop-floating actions were appended is a normal migration - those two load from
+            // their defaults - and must not be reported as a degraded file; a rejected stored entry
+            // already added its own note in ReadBindings.
+            var legacyMissing = LegacyActions.Count(action => !stored.ContainsKey(action));
+            if (document.Bindings is not null && legacyMissing > 0)
+                notes.Add($"{legacyMissing} 个动作没有可用的快捷键配置，已使用默认或避让组合");
             var bindings = new List<HotkeyBinding>(actions.Length);
             var used = new List<HotkeyGesture>(actions.Length);
             foreach (var action in actions)

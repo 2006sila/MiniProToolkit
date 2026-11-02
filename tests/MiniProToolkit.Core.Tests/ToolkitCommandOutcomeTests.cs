@@ -123,7 +123,7 @@ public sealed class ToolkitCommandOutcomeTests
     [Fact]
     public void OutcomeTextsNeverEchoRawArgumentsOrValues()
     {
-        const string secretProfile = @"C:\Users\Alice\secret-regex-.*";
+        const string secretProfile = @"C:\synthetic\Alice\secret-regex-.*";
         var outcome = ToolkitCommandOutcome.From(["--quiet", "apply-profile", "--name", secretProfile, "--confirm"]);
         Assert.Equal(ToolkitCommandHostDisposition.RelayToRunningInstance, outcome.Disposition);
 
@@ -136,7 +136,7 @@ public sealed class ToolkitCommandOutcomeTests
             Assert.DoesNotContain("--confirm", text);
         }
 
-        var rejected = ToolkitCommandOutcome.From(["--quiet", "status", "--evil=C:\\Users\\Alice\\path"]);
+        var rejected = ToolkitCommandOutcome.From(["--quiet", "status", "--evil=C:\\synthetic\\Alice\\path"]);
         Assert.Equal(ToolkitCommandExitCodes.ParseError, rejected.ExitCode);
         Assert.DoesNotContain("Alice", rejected.SafeLogLine);
         Assert.DoesNotContain("Alice", rejected.Details!);

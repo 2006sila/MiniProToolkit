@@ -6,7 +6,22 @@
         Height="460"
         MinWidth="560"
         MinHeight="400"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <DockPanel Margin="14">
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="取消" Click="CancelClick" Margin="0,0,6,0" />
@@ -16,16 +31,16 @@
             <StackPanel>
                 <TextBlock Text="主显示源设置" FontSize="22" FontWeight="SemiBold" />
                 <TextBlock Text="只影响用户可见数据：主窗口 CPU 温度/功耗、任务栏、实时趋势和历史新采样。风扇曲线、90°C 保护、Guardian 恢复和所有 EC/风扇写入始终使用 EC 温度。"
-                           Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
+                           Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
                 <TextBlock Text="CPU 温度 / 功耗主显示源" FontWeight="SemiBold" Margin="0,0,0,6" />
                 <ComboBox x:Name="SourceCombo" Width="540" HorizontalAlignment="Left" SelectionChanged="SourceChanged">
                     <ComboBoxItem Content="EC 温度 + Windows Energy Meter 功耗（默认，兼容旧配置）" />
                     <ComboBoxItem Content="LibreHardwareMonitor（LHM）：不可用时逐项回退到 EC/Energy Meter 并提示" />
                 </ComboBox>
-                <TextBlock x:Name="DetailText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="#333" />
+                <TextBlock x:Name="DetailText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{StaticResource ObsidianTextPrimaryBrush}" />
                 <TextBlock Text="LHM 为可选只读数据源，需要管理员权限和可用驱动（可选 PawnIO）。本程序不会安装 PawnIO；普通权限或驱动缺失时，温度/功耗会各自回退到 EC/Energy Meter，并在主窗口和任务栏显示提示。"
-                           Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0" />
-                <TextBlock x:Name="LhmStatusText" Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0" />
+                           Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0" />
+                <TextBlock x:Name="LhmStatusText" Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0" />
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

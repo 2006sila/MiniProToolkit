@@ -32,7 +32,10 @@ public partial class ProfileAutomationWindow : Window
         IReadOnlyList<ProfileAutomationRuleStatus>? statuses = null,
         string? historyPath = null)
     {
-        InitializeComponent(); _profiles = profiles;
+        InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
+        _profiles = profiles;
         _history = new ProfileAutomationHistory(historyPath);
         // Snapshot the caller's current settings, not uncommitted edits or any persisted history labels.
         _ruleNames = settings.Rules.GroupBy(rule => ProfileAutomationHistory.AnonymousId(rule.Name))

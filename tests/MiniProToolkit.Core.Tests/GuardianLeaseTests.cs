@@ -364,6 +364,357 @@ public sealed class GuardianLeaseTests
         }
     }
 
+    // ---- Fresh pre-write renewal: the curve may only write while it still owns a fresh record ----
+
+    private static readonly TimeSpan RenewTimeout = TimeSpan.FromSeconds(8);
+
+    [Fact]
+    public void RenewUpdatesTheHeartbeatOfAnOwnedFreshRecord()
+    {
+        // The normal trusted path: TakeOverCurveLease published the record, later passes renew it.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(-1), start);
+
+            Assert.True(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+
+            var renewed = store.Read();
+            Assert.NotNull(renewed);
+            Assert.Equal(1234, renewed!.ProcessId);
+            Assert.Equal(start, renewed.ProcessStartUtc);
+            Assert.Equal(now, renewed.HeartbeatUtc);
+            Assert.Equal("fan-curve", renewed.ControlMode);
+            Assert.False(renewed.IsStale(now, RenewTimeout));
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewRefusesAStaleRecordAndKeepsItUnchanged()
+    {
+        // A pass that started inside the lease window can finish after it: renewal must fail closed
+        // instead of publishing a new heartbeat that would revive a lapsed lease.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        var expired = now.AddSeconds(-9);
+        try
+        {
+            store.WriteActive(1234, "fan-curve", expired, start);
+
+            Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+
+            var after = store.Read();
+            Assert.NotNull(after);
+            Assert.Equal(expired, after!.HeartbeatUtc); // untouched, not republished
+            Assert.True(after.IsStale(now, RenewTimeout));
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewAfterGuardianClearedTheLeaseNeverRecreatesIt()
+    {
+        // The race the fix targets: the pass read a valid lease, Guardian recovered and cleared it
+        // (or its compare-and-clear landed), and the write path must then refuse without recreating.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(-1), start);
+            var taken = store.Read();
+            Assert.NotNull(taken);
+            Assert.True(store.ClearOwned(taken!));
+
+            Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+
+            Assert.Null(store.Read());
+            Assert.False(File.Exists(path));
+            Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewRefusesAnotherIdentityEvenWithAFreshHeartbeat()
+    {
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now, start);
+
+            Assert.False(store.TryRenewOwnedFresh(5678, start, "fan-curve", () => now, RenewTimeout));
+            Assert.False(store.TryRenewOwnedFresh(1234, start.AddSeconds(30), "fan-curve", () => now, RenewTimeout));
+            Assert.False(store.TryRenewOwnedFresh(1234, null, "fan-curve", () => now, RenewTimeout));
+
+            var after = store.Read();
+            Assert.NotNull(after);
+            Assert.Equal(1234, after!.ProcessId);
+            Assert.Equal(start, after.ProcessStartUtc);
+            Assert.Equal(now, after.HeartbeatUtc);
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewRefusesAFutureHeartbeatBeyondTheClockTolerance()
+    {
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(5), start);
+
+            Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+            Assert.Equal(now.AddSeconds(5), store.Read()?.HeartbeatUtc);
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewWithoutALeaseDirectoryDoesNotCreateOne()
+    {
+        var directory = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), "MiniProToolkitTests", Guid.NewGuid().ToString());
+        var store = new GuardianLeaseStore(System.IO.Path.Combine(directory, "lease.json"));
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            Assert.False(store.TryRenewOwnedFresh(1234, now.AddMinutes(-5), "fan-curve", () => now, RenewTimeout));
+            Assert.False(Directory.Exists(directory));
+            Assert.Null(store.Read());
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewFailsClosedWhileAnotherHolderOwnsTheLock()
+    {
+        // A separate check-then-write would pass here; the atomic renewal cannot prove ownership.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path, TimeSpan.FromMilliseconds(100));
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(-1), start);
+            using (HoldLock(store))
+            {
+                Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+            }
+            Assert.Equal(now.AddSeconds(-1), store.Read()?.HeartbeatUtc);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewNeverReadsTheClockWhenItCannotTakeTheLock()
+    {
+        // Ordering proof for the fix: the caller no longer supplies the timestamp. The store takes the
+        // lock first and only then asks for the clock, so a renewal that fails on the lock never even
+        // consults a time source (and therefore cannot judge or publish anything).
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path, TimeSpan.FromMilliseconds(100));
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        var clockCalls = 0;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(-1), start);
+            using (HoldLock(store))
+            {
+                Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () =>
+                {
+                    clockCalls++;
+                    return now;
+                }, RenewTimeout));
+            }
+
+            Assert.Equal(0, clockCalls);
+            Assert.Equal(now.AddSeconds(-1), store.Read()?.HeartbeatUtc);
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewJudgesTheHeartbeatWithThePostLockClock()
+    {
+        // The reported defect: the caller computed "now" before the bounded lock wait. A record that
+        // was fresh at that instant is already past the timeout once the lock is finally held, so
+        // judging with the caller's old timestamp would publish an expired heartbeat. The verdict must
+        // use the time taken under the lock and therefore refuse here, leaving the record untouched.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var callerNow = DateTimeOffset.UtcNow;
+        var afterLockWait = callerNow.AddSeconds(9); // what the clock says once the lock is held
+        try
+        {
+            // Fresh for the caller (1 s old), stale (10 s old) for the post-lock clock.
+            store.WriteActive(1234, "fan-curve", callerNow.AddSeconds(-1), start);
+            Assert.True(GuardianCurveWriteLeasePolicy.CanWrite(store.Read(), 1234, start,
+                callerNow, RenewTimeout));
+
+            Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve",
+                () => afterLockWait, RenewTimeout));
+
+            Assert.Equal(callerNow.AddSeconds(-1), store.Read()?.HeartbeatUtc);
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewUsesOneLockedTimestampForTheVerdictAndTheHeartbeat()
+    {
+        // The same locked timestamp decides staleness and becomes the published heartbeat; the clock
+        // is consulted exactly once, so the record can never be stamped with a time the verdict did
+        // not see.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        var lockedNow = now.AddSeconds(2);
+        var clockCalls = 0;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now.AddSeconds(-1), start);
+
+            Assert.True(store.TryRenewOwnedFresh(1234, start, "fan-curve", () =>
+            {
+                clockCalls++;
+                return lockedNow;
+            }, RenewTimeout));
+
+            Assert.Equal(1, clockCalls);
+            var renewed = store.Read();
+            Assert.NotNull(renewed);
+            Assert.Equal(lockedNow, renewed!.HeartbeatUtc);
+            Assert.False(renewed.IsStale(lockedNow, RenewTimeout));
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewRejectsAMissingClockSource()
+    {
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        try
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                store.TryRenewOwnedFresh(1234, DateTimeOffset.UtcNow, "fan-curve", null!, RenewTimeout));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void RenewAcceptsExactlyTheTimeoutAndRefusesOneTickPast()
+    {
+        // Boundary of the unchanged 8 s policy: an age of exactly the timeout is still inside the
+        // window (IsStale is strictly greater), one tick beyond it is refused and stays unpublished.
+        var (directory, path) = CreateLeaseDirectory();
+        var store = new GuardianLeaseStore(path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var now = DateTimeOffset.UtcNow;
+        try
+        {
+            store.WriteActive(1234, "fan-curve", now - RenewTimeout, start);
+            Assert.True(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+            Assert.Equal(now, store.Read()?.HeartbeatUtc);
+
+            var edge = now.AddTicks(-RenewTimeout.Ticks - 1);
+            store.WriteActive(1234, "fan-curve", edge, start);
+            Assert.False(store.TryRenewOwnedFresh(1234, start, "fan-curve", () => now, RenewTimeout));
+            Assert.Equal(edge, store.Read()?.HeartbeatUtc);
+        }
+        finally
+        {
+            store.Clear();
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    // ---- Pure pre-write policy used by the store and by the control pass ----
+
+    [Fact]
+    public void WritePolicyAcceptsOnlyTheOwnersFreshRecord()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var start = now.AddMinutes(-5);
+        var fresh = new GuardianLease(1234, "fan-curve", now.AddSeconds(-1), start);
+
+        Assert.True(GuardianCurveWriteLeasePolicy.CanWrite(fresh, 1234, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(null, 1234, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(fresh, 5678, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(fresh, 1234, start.AddSeconds(30), now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(fresh, 1234, null, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(
+            fresh with { HeartbeatUtc = now.AddSeconds(-9) }, 1234, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(
+            fresh with { ProcessStartUtc = null }, 1234, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(
+            fresh with { HeartbeatUtc = now.AddSeconds(5) }, 1234, start, now, RenewTimeout));
+        // Same strict boundary as the store renewal: exactly the timeout is inside the window.
+        Assert.True(GuardianCurveWriteLeasePolicy.CanWrite(
+            fresh with { HeartbeatUtc = now - RenewTimeout }, 1234, start, now, RenewTimeout));
+        Assert.False(GuardianCurveWriteLeasePolicy.CanWrite(
+            fresh with { HeartbeatUtc = now - RenewTimeout - TimeSpan.FromTicks(1) }, 1234, start, now,
+            RenewTimeout));
+    }
+
     private static FileStream HoldLock(GuardianLeaseStore store) => new(
         store.LockPath,
         FileMode.OpenOrCreate,

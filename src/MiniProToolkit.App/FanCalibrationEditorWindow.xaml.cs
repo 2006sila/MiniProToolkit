@@ -23,6 +23,8 @@ public partial class FanCalibrationEditorWindow : Window
         Func<CancellationToken, IProgress<FanCalibrationSamplingProgress>, Task<FanCalibration>>? sampleAsync = null)
     {
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         _sampleAsync = sampleAsync;
         StartSamplingButton.IsEnabled = sampleAsync is not null;
         SamplingStatusText.Text = sampleAsync is null ? "当前模式不提供硬件实测（演示/只读）。" : "尚未开始实测。";
@@ -241,14 +243,14 @@ public partial class FanCalibrationEditorWindow : Window
         {
             var calibration = ParseCalibration();
             RangeText.Text = $"固定 RPM 估计范围：{calibration.RpmForDuty(40)}–{calibration.RpmForDuty(100)} RPM（40%–100% duty）";
-            RangeText.Foreground = System.Windows.Media.Brushes.DarkGreen;
+            RangeText.Foreground = ObsidianTheme.BrushOf(this, "ObsidianAccentBrush");
             var width = PreviewCanvas.ActualWidth;
             var height = PreviewCanvas.ActualHeight;
             if (width <= 1 || height <= 1) return;
             var maximum = Math.Max(1, calibration.Points[^1].Rpm);
             var line = new System.Windows.Shapes.Polyline
             {
-                Stroke = System.Windows.Media.Brushes.SteelBlue,
+                Stroke = ObsidianTheme.BrushOf(this, "ObsidianChartRpmBrush"),
                 StrokeThickness = 2
             };
             foreach (var point in calibration.Points)
@@ -260,7 +262,7 @@ public partial class FanCalibrationEditorWindow : Window
         catch (Exception ex) when (IsInputError(ex))
         {
             RangeText.Text = "标定无效：" + ex.Message;
-            RangeText.Foreground = System.Windows.Media.Brushes.DarkOrange;
+            RangeText.Foreground = ObsidianTheme.BrushOf(this, "ObsidianWarningBrush");
         }
     }
 

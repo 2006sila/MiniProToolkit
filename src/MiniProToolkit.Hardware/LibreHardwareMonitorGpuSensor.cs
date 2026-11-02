@@ -127,18 +127,19 @@ public sealed class LibreHardwareMonitorGpuSensor : IDisposable
 
         try
         {
-            var sensors = CollectGpuSensors(computer);
+            var (sensors, traversal) = CollectGpuSensors(computer);
             if (sensors.Count == 0)
             {
                 _nextAttemptUtc = LhmRetryPolicy.Schedule(now, LhmRetryPolicy.NoCpuSensorDelay);
-                return _lastReading = new LhmGpuReading(null, null, Sanitize("LHM 未发现 GPU 传感器（仅启用 GPU 组）"));
+                return _lastReading = new LhmGpuReading(null, null, WithTraversalHint(
+                    Sanitize("LHM 未发现 GPU 传感器（仅启用 GPU 组）"), traversal));
             }
 
             var selection = LhmGpuSensorSelector.SelectTemperature(sensors);
             if (!selection.IsSelected)
             {
                 _nextAttemptUtc = LhmRetryPolicy.Schedule(now, LhmRetryPolicy.NoUsableSelectionDelay);
-                return _lastReading = new LhmGpuReading(null, null, DescribeNoSelection(selection));
+                return _lastReading = new LhmGpuReading(null, null, WithTraversalHint(DescribeNoSelection(selection), traversal));
             }
 
             _consecutiveFailures = 0;
@@ -146,7 +147,7 @@ public sealed class LibreHardwareMonitorGpuSensor : IDisposable
             return _lastReading = new LhmGpuReading(
                 selection.Value,
                 selection.SensorName,
-                DescribeReading(selection));
+                WithTraversalHint(DescribeReading(selection), traversal));
         }
         catch (Exception ex)
         {
@@ -201,9 +202,16 @@ public sealed class LibreHardwareMonitorGpuSensor : IDisposable
         _computer = null;
     }
 
-    private static List<LhmGpuSensorValue> CollectGpuSensors(Computer computer)
+    /// <summary>
+    /// GPU-scoped sensor collection. The sub-hardware walk is iterative and bounded
+    /// (reference-identity visited set, one 256-node budget for the whole pass, depth
+    /// 8), so a vendor driver returning a cyclic or oversized graph cannot recurse
+    /// forever or stall the background pass. Values found before the bound are kept.
+    /// </summary>
+    private static (List<LhmGpuSensorValue> Values, TreeWalkOutcome Traversal) CollectGpuSensors(Computer computer)
     {
         var values = new List<LhmGpuSensorValue>();
+        var roots = new List<GpuTraversalNode>();
         foreach (var hardware in computer.Hardware)
         {
             // The GPU hardware type is the only reliable hardware-scope filter:
@@ -211,17 +219,26 @@ public sealed class LibreHardwareMonitorGpuSensor : IDisposable
             var vendor = MapVendor(hardware.HardwareType);
             if (vendor == LhmGpuVendor.Unknown)
                 continue;
-            CollectFrom(hardware, hardware.Name, vendor, values);
+            // Each root keeps its own name/vendor; children inherit them.
+            roots.Add(new GpuTraversalNode(hardware, hardware.Name, vendor));
         }
-        return values;
+
+        var traversal = BoundedTreeWalk.Walk(
+            roots,
+            node => Children(node),
+            (node, _) => CollectFrom(node, values));
+        return (values, traversal);
     }
 
-    private static void CollectFrom(
-        IHardware hardware,
-        string rootName,
-        LhmGpuVendor vendor,
-        List<LhmGpuSensorValue> values)
+    private static IEnumerable<GpuTraversalNode> Children(GpuTraversalNode node)
     {
+        foreach (var subHardware in node.Hardware.SubHardware)
+            yield return new GpuTraversalNode(subHardware, node.RootName, node.Vendor);
+    }
+
+    private static void CollectFrom(GpuTraversalNode node, List<LhmGpuSensorValue> values)
+    {
+        var hardware = node.Hardware;
         hardware.Update();
         foreach (var sensor in hardware.Sensors)
         {
@@ -230,11 +247,38 @@ public sealed class LibreHardwareMonitorGpuSensor : IDisposable
             var category = MapCategory(sensor.SensorType);
             if (category == LhmSensorCategory.Other)
                 continue;
-            values.Add(new LhmGpuSensorValue(rootName, vendor, sensor.Name, sensor.Value, category));
+            values.Add(new LhmGpuSensorValue(node.RootName, node.Vendor, sensor.Name, sensor.Value, category));
+        }
+    }
+
+    // Root name plus vendor, inherited by every child node of the bounded walk.
+    private sealed class GpuTraversalNode
+    {
+        public GpuTraversalNode(IHardware hardware, string rootName, LhmGpuVendor vendor)
+        {
+            Hardware = hardware;
+            RootName = rootName;
+            Vendor = vendor;
         }
 
-        foreach (var subHardware in hardware.SubHardware)
-            CollectFrom(subHardware, rootName, vendor, values);
+        public IHardware Hardware { get; }
+
+        public string RootName { get; }
+
+        public LhmGpuVendor Vendor { get; }
+    }
+
+    // A bounded walk that hit a limit is spelled out in the existing status text
+    // instead of silently pretending the (possibly incomplete) sensor list is the
+    // whole GPU. The reported temperature stays whatever the sensor really returned.
+    private static string WithTraversalHint(string status, TreeWalkOutcome traversal)
+    {
+        if (!traversal.WasTruncated)
+            return status;
+        var cut = traversal.DepthLimitReached && traversal.NodeBudgetExhausted
+            ? "节点与深度"
+            : traversal.DepthLimitReached ? "深度" : "节点";
+        return Sanitize($"{status}（LHM 硬件遍历已触及{cut}上限：{traversal.VisitedNodes} 个节点，读数可能不完整）");
     }
 
     private static LhmGpuVendor MapVendor(HardwareType hardwareType) => hardwareType switch

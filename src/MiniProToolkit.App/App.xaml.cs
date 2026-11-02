@@ -61,7 +61,8 @@ public partial class App : System.Windows.Application
                 return;
             }
 
-            RelayCommandToRunningInstance(e.Args, outcome);
+            RelayCommandToRunningInstance(e.Args, outcome,
+                instanceKnownByLock: instanceLock.State == ToolkitSingleInstanceState.AlreadyHeld);
             return;
         }
 
@@ -225,8 +226,15 @@ public partial class App : System.Windows.Application
     /// Command path: hand the parsed command to the already running instance and exit with its result code. No window
     /// is opened and no dialog is shown, so a script is never blocked; without an instance this exits with
     /// <see cref="ToolkitCommandExitCodes.NoRunningInstance"/> instead of starting a second hardware instance.
+    /// <para>
+    /// <paramref name="instanceKnownByLock"/> is the evidence that another process really holds the instance lock. It
+    /// is passed on so a connect timeout/IO failure is reported as "主实例忙或暂时无法连接，命令未发送" (exit code 6)
+    /// instead of the false "MiniProToolkit is not started" (exit code 4); nothing was sent, so no "may already have
+    /// executed" wording either.
+    /// </para>
     /// </summary>
-    private void RelayCommandToRunningInstance(IReadOnlyList<string> arguments, ToolkitCommandOutcome outcome)
+    private void RelayCommandToRunningInstance(IReadOnlyList<string> arguments, ToolkitCommandOutcome outcome,
+        bool instanceKnownByLock)
     {
         var parsed = ToolkitCommandLineParser.Parse(arguments);
         if (parsed.Command is null)
@@ -241,7 +249,7 @@ public partial class App : System.Windows.Application
         // after a timeout can be recognized by the running instance; without it a fresh id is generated per launch.
         // The id itself is never echoed to stdout or the log.
         var request = ToolkitCommandIpcProtocol.CreateRequest(parsed.Command, parsed.RequestId);
-        var response = AppCommandPipeClient.Send(request);
+        var response = AppCommandPipeClient.Send(request, instanceKnownByLock: instanceKnownByLock);
         var exitCode = ExitCodeFor(response.Status);
 
         // Log-safe: only the action name, the status and the exit code, never an option value, a request id or the raw
@@ -258,13 +266,11 @@ public partial class App : System.Windows.Application
         Shutdown(exitCode);
     }
 
-    private static int ExitCodeFor(ToolkitCommandIpcStatus status) => status switch
-    {
-        ToolkitCommandIpcStatus.Ok => ToolkitCommandExitCodes.Success,
-        ToolkitCommandIpcStatus.TimedOut => ToolkitCommandExitCodes.CommandTimedOut,
-        ToolkitCommandIpcStatus.Unavailable => ToolkitCommandExitCodes.NoRunningInstance,
-        _ => ToolkitCommandExitCodes.CommandRejected
-    };
+    /// <summary>
+    /// Wire status to process exit code. The mapping itself lives in Core (<see cref="ToolkitCommandExitCodes.ForIpcStatus"/>)
+    /// so it can be unit-tested without this windowed assembly.
+    /// </summary>
+    private static int ExitCodeFor(ToolkitCommandIpcStatus status) => ToolkitCommandExitCodes.ForIpcStatus(status);
 
     /// <summary>
     /// Best-effort structured line for scripts. A windowed process may have no console attached or the pipe may

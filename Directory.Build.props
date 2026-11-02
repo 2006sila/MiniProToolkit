@@ -4,5 +4,25 @@
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
     <InformationalVersion>0.1.0</InformationalVersion>
+    <!-- Build determinism: identical inputs produce byte-identical metadata, independent of
+         the build time and of the checkout location. -->
+    <Deterministic>true</Deterministic>
+    <!-- Source-path determinism. It only rewrites paths that come from SourceRoot/SourceLink
+         information; this repository currently configures no SourceLink package, so the
+         property is inert here and the explicit PathMap below does the actual rewriting.
+         ContinuousIntegrationBuild is deliberately NOT set unconditionally: it requires
+         SourceLink/SourceRoot information and turns on CI-only compiler behaviour, so it
+         belongs to the CI pipeline (set it there), not to every local build and to the
+         release publisher. -->
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <!-- Privacy: the compiler records the full path of the assemblies' PDB in the PE
+         CodeView debug directory and the full path of every source file in the PDB. This
+         path map rewrites the checkout root to a machine-independent virtual root, so no
+         published artifact names the build machine's directory layout or a user name.
+         The source side must keep its trailing separator: the mapping is a prefix
+         substitution on the absolute root, so "<checkout>\src\..." becomes
+         "/_/MiniProToolkit/src/..." and stays a stable, debuggable path for stack traces
+         and symbol servers. -->
+    <PathMap>$(MSBuildThisFileDirectory)=/_/MiniProToolkit/</PathMap>
   </PropertyGroup>
 </Project>

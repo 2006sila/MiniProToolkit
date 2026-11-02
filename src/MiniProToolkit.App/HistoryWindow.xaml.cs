@@ -26,10 +26,26 @@ public partial class HistoryWindow : Window
     private bool _local = true;
     private string[] _externalFiles = [];
 
+    // Application and Guardian logs are written through Core BoundedTextLog:
+    // 2 MiB live file + 3 rotated archives (path, path.1, path.2, path.3). The history window must
+    // read the same bounded set, otherwise every record that rotated out of the live file silently
+    // disappears from the timeline.
+    private const int LogRetainedArchives = BoundedTextLog.DefaultRetainedFiles; // 3 -> path.1 .. path.3
+    private const int LogFilesPerSource = LogRetainedArchives + 1;
+    private const int LogTailBytesPerFile = TelemetryHistory.DefaultLogTailBytes;   // 2 MiB
+    private const int LogTailEntriesPerFile = TelemetryHistory.DefaultLogTailEntries; // 2000
+    private const long LogBytesMiB = 1024 * 1024;
+
+    /// <summary>Rotated archives oldest-first (path.3, path.2, path.1) followed by the live file.</summary>
+    private static IReadOnlyList<string> BoundedLogFilesOldestFirst(string path) =>
+        Enumerable.Range(1, LogRetainedArchives).Reverse().Select(index => $"{path}.{index}").Append(path).ToArray();
+
     public HistoryWindow(string directory)
     {
         _directory = directory;
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         _ready = true;
         var settings = new TelemetryRetentionSettingsStore(_directory).Load(out var warning);
         RetainedText.Text = settings.RetainedArchiveCount.ToString(CultureInfo.InvariantCulture);
@@ -69,12 +85,44 @@ public partial class HistoryWindow : Window
                 var warnings = result.Warnings.ToList();
                 if (local)
                 {
-                    foreach (var log in new[] { (AppLog.Path, "应用"), (IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "MiniProToolkit", "guardian.log"), "Guardian") })
+                    var sources = new[]
                     {
-                        cancellation.Token.ThrowIfCancellationRequested();
-                        try { events.AddRange(TelemetryHistory.ReadLog(log.Item1, log.Item2, cancellation.Token)); }
-                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { warnings.Add($"{log.Item2}日志：{ex.Message}"); }
+                        (Path: AppLog.Path, Source: "应用"),
+                        (Path: IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "MiniProToolkit", "guardian.log"), Source: "Guardian")
+                    };
+                    var archivedAny = false;
+                    foreach (var log in sources)
+                    {
+                        var archivesFound = 0;
+                        foreach (var file in BoundedLogFilesOldestFirst(log.Path))
+                        {
+                            cancellation.Token.ThrowIfCancellationRequested();
+                            if (!File.Exists(file)) continue;
+                            if (!string.Equals(file, log.Path, StringComparison.Ordinal)) archivesFound++;
+                            try
+                            {
+                                // Per-file budget: newest 2 MiB / 2000 lines, so four files per source
+                                // cap the transient read at ~8 MiB / 8000 records (both sources ~16 MiB
+                                // / 16000). ReadLog reports its own truncation through the warning hook.
+                                var name = IOPath.GetFileName(file);
+                                events.AddRange(TelemetryHistory.ReadLog(file, log.Source,
+                                    LogTailBytesPerFile, LogTailEntriesPerFile,
+                                    message => warnings.Add($"{log.Source}日志 {name}：{message}"),
+                                    cancellation.Token));
+                            }
+                            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                            { warnings.Add($"{log.Source}日志 {IOPath.GetFileName(file)}：{ex.Message}"); }
+                        }
+                        if (archivesFound > 0 || File.Exists(log.Path))
+                        {
+                            archivedAny = true;
+                            // Rotation discards the oldest archive, and even the live file is only read
+                            // as a bounded tail: never suggest that the whole log history is available.
+                            warnings.Add($"{log.Source}日志：每份仅读取末尾 {LogTailBytesPerFile / 1024} KiB、最多 {LogTailEntriesPerFile} 条，最多 {LogRetainedArchives} 份轮转归档（当前发现 {archivesFound} 份，单来源约 {LogFilesPerSource * LogTailBytesPerFile / LogBytesMiB} MiB / {LogFilesPerSource * LogTailEntriesPerFile} 条）；已轮转的日志归档按保留数量有限，最早内容可能已淘汰。");
+                        }
                     }
+                    if (archivedAny)
+                        warnings.Add($"日志读取总预算：应用与 Guardian 合计约 {2 * LogFilesPerSource * LogTailBytesPerFile / LogBytesMiB} MiB / {2 * LogFilesPerSource * LogTailEntriesPerFile} 条临时记录，超出部分不加载。");
                     foreach (var journal in new[]
                     {
                         (IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MiniProToolkit", "history", "diagnostic-events.jsonl"), "应用"),
@@ -197,18 +245,18 @@ public partial class HistoryWindow : Window
         var to = from.AddSeconds(window);
         var rows = _filtered.Where(r => r.Timestamp >= from && r.Timestamp <= to).ToArray();
         SamplesGrid.ItemsSource = rows;
-        RangeText.Text = $"{FormatTime(from)} — {FormatTime(to)} · {_zoom:0}× · 当前视野 {rows.Length} 条；四个独立单位面板共享时间/缩放/平移，导出为所选完整时段。橙红=温度，蓝=实际 RPM，紫=目标 RPM（曲线优先），绿=duty %，金=CPU %，深紫=CPU 封装功耗 W（非整机）。温度/功耗使用记录主显示源；采样表和导出温度始终为 °C。";
+        RangeText.Text = $"{FormatTime(from)} — {FormatTime(to)} · {_zoom:0}× · 当前视野 {rows.Length} 条；四个独立单位面板共享时间/缩放/平移，导出为所选完整时段。青=温度，蓝=实际 RPM，灰蓝=目标 RPM（曲线优先），紫=duty %，金=CPU %，橙=CPU 封装功耗 W（非整机）。温度/功耗使用记录主显示源；采样表和导出温度始终为 °C。";
         var width = Chart.ActualWidth - 105;
         var panelHeight = Math.Max(20, (Chart.ActualHeight - 12) / 4);
         var fahrenheit = TemperatureUnitCombo.SelectedIndex == 1;
         var series = new (HistoryChartSeries Kind, System.Windows.Media.Brush Color, bool Enabled)[]
         {
-            (HistoryChartSeries.CpuTemperature, Brushes.OrangeRed, TempCheck.IsChecked == true),
-            (HistoryChartSeries.ActualRpm, Brushes.SteelBlue, RpmCheck.IsChecked == true),
-            (HistoryChartSeries.TargetRpm, Brushes.MediumPurple, TargetCheck.IsChecked == true),
-            (HistoryChartSeries.Duty, Brushes.ForestGreen, DutyCheck.IsChecked == true),
-            (HistoryChartSeries.CpuUsage, Brushes.DarkGoldenrod, CpuCheck.IsChecked == true),
-            (HistoryChartSeries.CpuPower, Brushes.DarkViolet, PowerCheck.IsChecked == true)
+            (HistoryChartSeries.CpuTemperature, ObsidianTheme.BrushOf(this, "ObsidianChartTemperatureBrush"), TempCheck.IsChecked == true),
+            (HistoryChartSeries.ActualRpm, ObsidianTheme.BrushOf(this, "ObsidianChartRpmBrush"), RpmCheck.IsChecked == true),
+            (HistoryChartSeries.TargetRpm, ObsidianTheme.BrushOf(this, "ObsidianChartTargetRpmBrush"), TargetCheck.IsChecked == true),
+            (HistoryChartSeries.Duty, ObsidianTheme.BrushOf(this, "ObsidianChartDutyBrush"), DutyCheck.IsChecked == true),
+            (HistoryChartSeries.CpuUsage, ObsidianTheme.BrushOf(this, "ObsidianWarningBrush"), CpuCheck.IsChecked == true),
+            (HistoryChartSeries.CpuPower, ObsidianTheme.BrushOf(this, "ObsidianChartPowerBrush"), PowerCheck.IsChecked == true)
         };
         var units = new[] { fahrenheit ? HistoryChartUnit.Fahrenheit : HistoryChartUnit.Celsius, HistoryChartUnit.Rpm, HistoryChartUnit.Percent, HistoryChartUnit.Watts };
         var positiveGaps = rows.Zip(rows.Skip(1), (a, b) => (b.Timestamp - a.Timestamp).TotalSeconds).Where(v => v > 0).OrderBy(v => v).ToArray();
@@ -223,14 +271,14 @@ public partial class HistoryWindow : Window
             for (var tick = 0; tick <= 2; tick++)
             {
                 var y = top + tick * height / 2;
-                Chart.Children.Add(new Line { X1 = 85, X2 = 85 + width, Y1 = y, Y2 = y, Stroke = Brushes.LightGray });
+                Chart.Children.Add(new Line { X1 = 85, X2 = 85 + width, Y1 = y, Y2 = y, Stroke = ObsidianTheme.BrushOf(this, "ObsidianChartGuideBrush") });
                 Label($"{axis.Maximum * (1 - tick / 2d):0.#} {axis.Label}", 3, y - 7, axisColor);
             }
             foreach (var marker in _events.Where(e => e.Timestamp >= from && e.Timestamp <= to && e.Kind is HistoryEventKind.Mode or HistoryEventKind.Recovery or HistoryEventKind.Error)
                 .GroupBy(e => (int)((e.Timestamp - from).TotalSeconds / window * width)).Select(g => g.OrderByDescending(e => e.Kind == HistoryEventKind.Error).First()))
             {
                 var x = 85 + (marker.Timestamp - from).TotalSeconds / window * width;
-                Chart.Children.Add(new Line { X1 = x, X2 = x, Y1 = top, Y2 = top + height, Stroke = marker.Kind == HistoryEventKind.Error ? Brushes.LightCoral : Brushes.Silver, StrokeDashArray = [2, 4], ToolTip = marker.Message });
+                Chart.Children.Add(new Line { X1 = x, X2 = x, Y1 = top, Y2 = top + height, Stroke = ObsidianTheme.BrushOf(this, marker.Kind == HistoryEventKind.Error ? "ObsidianDangerBrush" : "ObsidianTextTertiaryBrush"), StrokeDashArray = [2, 4], ToolTip = marker.Message });
             }
             foreach (var item in group.Where(s => s.Enabled)) Draw(item.Kind, item.Color, axis, top, height);
         }
@@ -265,7 +313,7 @@ public partial class HistoryWindow : Window
     }
     private void Label(string text, double x, double y, System.Windows.Media.Brush? color = null)
     {
-        var label = new TextBlock { Text = text, FontSize = 10, Foreground = color ?? Brushes.Gray };
+        var label = new TextBlock { Text = text, FontSize = 10, Foreground = color ?? ObsidianTheme.BrushOf(this, "ObsidianTextSecondaryBrush") };
         Canvas.SetLeft(label, x); Canvas.SetTop(label, y); Chart.Children.Add(label);
     }
     private void ExportRecordsClick(object sender, RoutedEventArgs e)

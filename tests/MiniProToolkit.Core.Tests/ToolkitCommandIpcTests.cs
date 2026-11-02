@@ -262,7 +262,7 @@ public sealed class ToolkitCommandIpcTests
     [Fact]
     public void RejectionTextNeverContainsRawJson()
     {
-        var payload = Utf8(Body("\"action\":\"apply-profile\",\"profileName\":\"C:\\\\Users\\\\Alice\",\"confirmed\":true,\"extra\":1"));
+        var payload = Utf8(Body("\"action\":\"apply-profile\",\"profileName\":\"C:\\\\synthetic\\\\Alice\",\"confirmed\":true,\"extra\":1"));
         var parsed = ToolkitCommandIpcProtocol.TryParseRequest(payload);
         Assert.False(parsed.Success);
         Assert.DoesNotContain("Alice", parsed.Message);

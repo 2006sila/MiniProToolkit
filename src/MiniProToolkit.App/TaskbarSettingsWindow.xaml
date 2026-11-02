@@ -6,28 +6,105 @@
         Height="760"
         MinWidth="600"
         MinHeight="560"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!-- 棋盘格底纹：透明或半透明颜色叠在它上面时，用户能直接看出“这里是透明的”。 -->
+            <DrawingBrush x:Key="TaskbarColorCheckerBrush" TileMode="Tile" Viewport="0,0,12,12" ViewportUnits="Absolute" Stretch="None">
+                <DrawingBrush.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="#FF2A3542" Geometry="M0,0 H12 V12 H0 Z" />
+                        <GeometryDrawing Brush="#FF1A2230">
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <RectangleGeometry Rect="0,0,6,6" />
+                                    <RectangleGeometry Rect="6,6,6,6" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                    </DrawingGroup>
+                </DrawingBrush.Drawing>
+            </DrawingBrush>
+        </ResourceDictionary>
+    </Window.Resources>
     <DockPanel Margin="14">
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button AutomationProperties.Name="上移所选任务栏项目" AutomationProperties.HelpText="将列表中当前选中项目向前移动一位。" Content="上移" Click="MoveUpClick" Margin="0,0,6,0" />
-            <Button AutomationProperties.Name="下移所选任务栏项目" AutomationProperties.HelpText="将列表中当前选中项目向后移动一位。" Content="下移" Click="MoveDownClick" Margin="0,0,6,0" />
             <Button AutomationProperties.Name="取消任务栏与快捷键设置修改" Content="取消" Click="CancelClick" Margin="0,0,6,0" />
             <Button AutomationProperties.Name="保存任务栏与快捷键设置" Content="保存" Click="SaveClick" IsDefault="True" />
         </StackPanel>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
             <TextBlock Text="任务栏显示设置" FontSize="22" FontWeight="SemiBold" />
-            <TextBlock Text="勾选项目并用上移/下移调整顺序。任务栏只读取状态，不会写入硬件。"
-                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
-            <ListBox x:Name="ItemsList" AutomationProperties.Name="任务栏显示项目与顺序" AutomationProperties.HelpText="勾选要显示的项目；选中项目后使用上移或下移按钮调整顺序。" Height="260" SelectionMode="Single">
+            <TextBlock Text="拖动每行左侧的手柄上下移动即可调整顺序（也可选中后用 Ctrl+↑ / Ctrl+↓ 微调）。点击复选框只改变是否显示，不会移动项目。"
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
+            <ListBox x:Name="ItemsList" AutomationProperties.Name="任务栏显示项目与顺序" AutomationProperties.HelpText="拖动每行左侧手柄上下移动可即时调整顺序；也可选中项目后按 Ctrl+↑ / Ctrl+↓ 一次移动一格。列表排序只有这两个入口：窗口底部已没有上移/下移排序按钮，页面上标着上移/下移的方向按钮移动的是任务栏状态条本身，不改变项目顺序。拖动复选框只改变勾选，不会移动项目。" Height="340" SelectionMode="Single" ScrollViewer.CanContentScroll="True" PreviewKeyDown="ItemsListPreviewKeyDown">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <CheckBox AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="勾选以在任务栏显示此状态项目。" Content="{Binding Label}" IsChecked="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Padding="4" />
+                        <Grid MinHeight="30">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="22" />
+                                <ColumnDefinition Width="26" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- 独立的拖拽手柄：只有这块区域会移动项目，复选框不受影响。 -->
+                            <Thumb x:Name="ItemDragThumb" Width="18" Height="24" Cursor="SizeNS" Background="Transparent"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False"
+                                   AutomationProperties.Name="{Binding DragHandleName}"
+                                   AutomationProperties.HelpText="按住此手柄上下拖动，实时调整该状态项目在任务栏上的顺序。"
+                                   DragStarted="ItemDragStarted" DragDelta="ItemDragDelta" DragCompleted="ItemDragCompleted">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="Transparent" Padding="4,2">
+                                            <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Rectangle Width="10" Height="2" Fill="{DynamicResource ObsidianTextSecondaryBrush}" />
+                                                <Rectangle Width="10" Height="2" Fill="{DynamicResource ObsidianTextSecondaryBrush}" Margin="0,2,0,0" />
+                                                <Rectangle Width="10" Height="2" Fill="{DynamicResource ObsidianTextSecondaryBrush}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayIndex}" VerticalAlignment="Center"
+                                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="12" />
+                            <CheckBox Grid.Column="2" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="勾选以在任务栏显示此状态项目。" Content="{Binding Label}" IsChecked="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" Padding="4" VerticalAlignment="Center" />
+                        </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <CheckBox x:Name="CompactCheck" AutomationProperties.Name="任务栏紧凑横排" Content="紧凑横排" Margin="0,12,0,4" />
+            <Separator Margin="0,14,0,6"/>
+            <TextBlock Text="任务栏状态条" FontSize="16" FontWeight="SemiBold" Margin="0,2,0,2" />
+            <!-- 任务栏显示的唯一开关（旧版总览里的快速开关已删除）：只在一个地方控制状态条，
+                 勾选变化即时预览（创建/关闭 overlay），保存才写盘，取消恢复打开本窗口时的状态。 -->
+            <CheckBox x:Name="EnabledCheck" AutomationProperties.Name="显示任务栏状态"
+                      AutomationProperties.HelpText="关闭后不再创建或刷新任务栏状态条（取消勾选立即预览，保存后持久化）；只影响任务栏显示，风扇控制和遥测仍按 1 秒独立调度。"
+                      Content="显示任务栏状态" Margin="0,6,0,4"
+                      Checked="EnabledChanged" Unchecked="EnabledChanged" />
+            <CheckBox x:Name="CompactCheck" AutomationProperties.Name="任务栏紧凑横排" Content="紧凑横排" Margin="0,4" />
             <CheckBox x:Name="VerticalCheck" AutomationProperties.Name="任务栏竖排显示" Content="竖排显示（适合竖向任务栏）" Margin="0,4" />
+            <TextBlock Text="排列模式" Margin="0,10,0,4" />
+            <ComboBox x:Name="LayoutModeCombo" Width="380" HorizontalAlignment="Left"
+                      AutomationProperties.Name="任务栏排列模式"
+                      AutomationProperties.HelpText="选择任务栏状态的排列方式：A 双列堆叠（默认）、C 单行分段、D 自适应多列、E 标签上数值下。C 的两组是“前 2 项 / 其余项目”；A 只有两组之间一条细竖线。窄栏放不下时显示 +N（悬停可看被省略的指标），不静默裁切。竖排任务栏会自动退化；紧凑模式只影响间距和字号，不替代排列模式。保存后生效。"
+                      SelectionChanged="LayoutModeChanged">
+                <ComboBoxItem Content="A · 双列堆叠（默认）" Tag="StackedPairs" />
+                <ComboBoxItem Content="C · 单行分段" Tag="Inline" />
+                <ComboBoxItem Content="D · 自适应多列" Tag="AdaptiveColumns" />
+                <ComboBoxItem Content="E · 标签上、数值下" Tag="LabelOverValue" />
+            </ComboBox>
+            <TextBlock x:Name="LayoutModeHint" AutomationProperties.Name="任务栏排列模式说明"
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11"
+                       TextWrapping="Wrap" Margin="0,6,0,0" />
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                 <TextBlock Text="显示刷新间隔（秒）" VerticalAlignment="Center" />
                 <ComboBox x:Name="RefreshCombo" AutomationProperties.Name="任务栏显示刷新间隔秒数" AutomationProperties.HelpText="只影响任务栏显示；不改变风扇控制或遥测调度。" Width="80" Margin="8,0,0,0">
@@ -39,23 +116,224 @@
                 </ComboBox>
             </StackPanel>
             <TextBlock Text="此间隔只影响任务栏显示；风扇控制和遥测独立按 1 秒调度。"
-                       Foreground="#666" FontSize="11" Margin="0,10,0,0" />
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" Margin="0,10,0,0" />
+            <!-- 字体区只保留字体与字号两行；颜色不再是两个十六进制输入框 + 两排色样的重复入口。 -->
             <Grid Margin="0,12,0,0">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <TextBlock Text="字体" VerticalAlignment="Center"/><TextBox x:Name="FontFamilyText" AutomationProperties.Name="任务栏字体家族" Grid.Column="1" Text="Segoe UI"/>
-                <TextBlock Text="字号" Grid.Row="1" VerticalAlignment="Center"/><TextBox x:Name="FontSizeText" AutomationProperties.Name="任务栏字号" Grid.Row="1" Grid.Column="1" Text="12"/>
-                <TextBlock Text="文字颜色" Grid.Row="2" VerticalAlignment="Center"/><TextBox x:Name="TextColorText" AutomationProperties.Name="任务栏文字颜色" AutomationProperties.HelpText="输入十六进制颜色，例如 #E8EAED。" Grid.Row="2" Grid.Column="1" Text="#E8EAED"/>
-                <TextBlock Text="背景颜色" Grid.Row="3" VerticalAlignment="Center"/><TextBox x:Name="BackgroundColorText" AutomationProperties.Name="任务栏背景颜色" AutomationProperties.HelpText="输入十六进制颜色，例如 #202124。" Grid.Row="3" Grid.Column="1" Text="#202124"/>
+                <TextBlock Text="字号" Grid.Row="1" VerticalAlignment="Center"/><TextBox x:Name="FontSizeText" AutomationProperties.Name="任务栏字号" AutomationProperties.HelpText="输入 8 到 32 之间的字号，只影响任务栏状态条。" Grid.Row="1" Grid.Column="1" Text="12"/>
             </Grid>
+
+            <!-- 单一任务栏配色卡片：先选“文字 / 背景”哪个编辑目标，再用同一组色样、同一个“更多颜色…”、
+                 同一个高级色号输入框修改它。背景目标额外显示不透明度与“完全透明”。整个卡片只有一套颜色入口，
+                 点色样/调色盘/色号/不透明度都只改内存里的编辑值并即时预览；保存才持久化，取消恢复打开时状态。 -->
+            <Border x:Name="ColorCard" Margin="0,12,0,0" Padding="14" CornerRadius="10"
+                    Background="{StaticResource ObsidianCardBackgroundBrush}"
+                    BorderBrush="{StaticResource ObsidianCardBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="任务栏配色" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="选择文字或背景后挑色，即时预览；保存后保留。"
+                               Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                    <!-- 互斥编辑目标：Tab 到后按方向键切换。切换只改变“改哪一半”，不改任何颜色、不预览、不写盘。 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <RadioButton x:Name="TextColorTargetRadio" GroupName="TaskbarColorTarget" IsChecked="True" Checked="ColorTargetChanged"
+                                     Margin="0,0,18,0" VerticalContentAlignment="Center"
+                                     AutomationProperties.Name="任务栏颜色编辑目标：文字"
+                                     AutomationProperties.HelpText="选中后，色样、“更多颜色…”和高级色号都只修改任务栏文字颜色；切换目标不会改动任何已选颜色。">
+                            <StackPanel Orientation="Horizontal">
+                                <Grid Width="18" Height="18">
+                                    <Border CornerRadius="3" Background="{StaticResource TaskbarColorCheckerBrush}"
+                                            BorderBrush="{StaticResource ObsidianControlBorderBrush}" BorderThickness="1"/>
+                                    <Border x:Name="TextColorChip" CornerRadius="3" Background="#E8EAED"/>
+                                </Grid>
+                                <TextBlock Text="文字" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="BackgroundColorTargetRadio" GroupName="TaskbarColorTarget" Checked="ColorTargetChanged"
+                                     VerticalContentAlignment="Center"
+                                     AutomationProperties.Name="任务栏颜色编辑目标：背景"
+                                     AutomationProperties.HelpText="选中后，色样、“更多颜色…”和高级色号都只修改任务栏背景颜色并保留它已有的不透明度；切换目标不会改动任何已选颜色。">
+                            <StackPanel Orientation="Horizontal">
+                                <Grid Width="18" Height="18">
+                                    <Border CornerRadius="3" Background="{StaticResource TaskbarColorCheckerBrush}"
+                                            BorderBrush="{StaticResource ObsidianControlBorderBrush}" BorderThickness="1"/>
+                                    <Border x:Name="BackgroundColorChip" CornerRadius="3" Background="#00000000"/>
+                                </Grid>
+                                <TextBlock Text="背景" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                    <TextBlock x:Name="ColorTargetStatusText" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                               Foreground="{StaticResource ObsidianTextSecondaryBrush}"
+                               AutomationProperties.Name="当前任务栏颜色编辑目标与色值"/>
+
+                    <!-- 本地配色预览：棋盘格底 + 可设置背景的内层 + 文字前景，不是真实遥测数值。 -->
+                    <TextBlock Text="配色预览" FontSize="11" Margin="0,12,0,4"
+                               Foreground="{StaticResource ObsidianTextSecondaryBrush}"/>
+                    <Border x:Name="ColorPreviewSurface" Height="44" CornerRadius="8" Padding="10"
+                            Background="{StaticResource TaskbarColorCheckerBrush}"
+                            BorderBrush="{StaticResource ObsidianCardBorderBrush}" BorderThickness="1"
+                            AutomationProperties.Name="任务栏配色预览（棋盘格表示透明）">
+                        <Border x:Name="ColorPreviewCard" CornerRadius="5" Padding="10,4"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" Background="#00000000">
+                            <TextBlock x:Name="ColorPreviewText" FontSize="13" FontWeight="SemiBold" Foreground="#E8EAED"
+                                       Text="任务栏状态 · CPU · 风扇"
+                                       AutomationProperties.Name="配色预览文字示例"/>
+                        </Border>
+                    </Border>
+
+                    <!-- 一组公共色样：只修改当前编辑目标；每个色样都是可聚焦按钮，提示含中文色名 + hex。 -->
+                    <WrapPanel x:Name="ColorSwatches" Margin="0,12,0,0" Orientation="Horizontal"
+                               AutomationProperties.Name="任务栏颜色常用色样"
+                               AutomationProperties.HelpText="色样修改当前选中的编辑目标；每个色样是可聚焦按钮，悬停提示包含中文色名和十六进制色值。">
+                        <Button Tag="#000000" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="黑色 #000000"
+                                AutomationProperties.Name="文字/背景色样 黑色 #000000">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#000000" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#FFFFFF" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="白色 #FFFFFF"
+                                AutomationProperties.Name="文字/背景色样 白色 #FFFFFF">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#FFFFFF" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#808080" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="灰色 #808080"
+                                AutomationProperties.Name="文字/背景色样 灰色 #808080">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#808080" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#FF5C5C" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="红色 #FF5C5C"
+                                AutomationProperties.Name="文字/背景色样 红色 #FF5C5C">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#FF5C5C" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#FFB86B" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="橙色 #FFB86B"
+                                AutomationProperties.Name="文字/背景色样 橙色 #FFB86B">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#FFB86B" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#FFE082" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="黄色 #FFE082"
+                                AutomationProperties.Name="文字/背景色样 黄色 #FFE082">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#FFE082" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#7AE582" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="绿色 #7AE582"
+                                AutomationProperties.Name="文字/背景色样 绿色 #7AE582">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#7AE582" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#69DBCF" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="青色 #69DBCF"
+                                AutomationProperties.Name="文字/背景色样 青色 #69DBCF">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#69DBCF" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#70D6FF" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="蓝色 #70D6FF"
+                                AutomationProperties.Name="文字/背景色样 蓝色 #70D6FF">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#70D6FF" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#C792EA" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="紫色 #C792EA"
+                                AutomationProperties.Name="文字/背景色样 紫色 #C792EA">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#C792EA" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#D9E0E8" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="银灰 #D9E0E8"
+                                AutomationProperties.Name="文字/背景色样 银灰 #D9E0E8">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#D9E0E8" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                        <Button Tag="#FF8FB1" Width="34" Height="30" Padding="0" Margin="0,0,6,6"
+                                Click="ColorSwatchClick" ToolTip="粉色 #FF8FB1"
+                                AutomationProperties.Name="文字/背景色样 粉色 #FF8FB1">
+                            <Border Width="22" Height="22" CornerRadius="3" Background="#FF8FB1" BorderBrush="#66FFFFFF" BorderThickness="1" />
+                        </Button>
+                    </WrapPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0" VerticalAlignment="Center">
+                        <Button x:Name="MoreColorsButton" Content="更多颜色…" Click="MoreColorsClick" Margin="0,0,10,0"
+                                AutomationProperties.Name="用系统调色盘为当前编辑目标选择更多颜色"
+                                AutomationProperties.HelpText="打开 Windows 颜色对话框为当前选中的文字或背景选择颜色；只修改当前目标并保留它已有的不透明度，取消不会改动任何颜色。系统对话框只能选择不透明 RGB，半透明请用背景不透明度或高级色号。" />
+                        <TextBlock x:Name="ColorCustomHint" VerticalAlignment="Center" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{StaticResource ObsidianTextSecondaryBrush}"
+                                   AutomationProperties.Name="当前颜色不在预设中的提示"/>
+                    </StackPanel>
+
+                    <!-- 背景目标独有：不透明度与完全透明。文字目标不显示这一块，避免误改背景。 -->
+                    <StackPanel x:Name="BackgroundOpacityPanel" Margin="0,10,0,0" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="不透明度" VerticalAlignment="Center"/>
+                            <Slider x:Name="BackgroundOpacitySlider" Grid.Column="1" Margin="10,0" Minimum="0" Maximum="100"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" Value="0" ValueChanged="BackgroundOpacityChanged"
+                                    AutomationProperties.Name="任务栏背景不透明度百分比"
+                                    AutomationProperties.HelpText="0 表示背景全透明，100 表示完全不透明；只影响背景，不改文字颜色。拖动后即时预览，保存后保留。" />
+                            <TextBlock x:Name="BackgroundOpacityText" Grid.Column="2" Width="44" TextAlignment="Right" VerticalAlignment="Center"
+                                       AutomationProperties.Name="任务栏背景当前不透明度"/>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
+                            <Button x:Name="BackgroundTransparentButton" Content="完全透明" Click="BackgroundTransparentClick" Margin="0,0,10,0"
+                                    AutomationProperties.Name="把任务栏背景设为完全透明"
+                                    AutomationProperties.HelpText="把背景写成 #00000000，overlay 不绘制背景；会记住最近选择的背景颜色，之后调高不透明度即可恢复。" />
+                            <TextBlock x:Name="BackgroundOpacityHint" Visibility="Collapsed" VerticalAlignment="Center" FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{StaticResource ObsidianTextSecondaryBrush}"
+                                       Text="背景当前全透明，调高不透明度后可见。"
+                                       AutomationProperties.Name="背景全透明提示"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 高级色号：默认折叠，只有当前目标的一个输入框；非法值就地提示，不污染已提交颜色。 -->
+                    <Expander x:Name="AdvancedColorExpander" Header="高级：色号" IsExpanded="False" Margin="0,12,0,0"
+                              AutomationProperties.Name="高级色号输入"
+                              AutomationProperties.HelpText="默认折叠；展开后可输入 #RRGGBB 或 #AARRGGBB，只修改当前编辑目标。回车或离开输入框生效，非法色号会就地提示且不会保存。">
+                        <StackPanel>
+                            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"
+                                       Foreground="{StaticResource ObsidianTextSecondaryBrush}"
+                                       Text="当前目标的十六进制色号（#RRGGBB 或 #AARRGGBB）；回车或离开输入框生效，Esc 恢复为已提交的颜色。"/>
+                            <TextBox x:Name="AdvancedColorText" LostFocus="AdvancedColorTextLostFocus" KeyDown="AdvancedColorTextKeyDown"
+                                     AutomationProperties.Name="当前编辑目标的十六进制色号"
+                                     AutomationProperties.HelpText="只对应上面选中的文字或背景目标；回车或离开输入框提交。非法值就地提示，不写入设置也不预览。按 Esc 恢复为已提交的颜色。" />
+                            <TextBlock x:Name="AdvancedColorErrorText" Visibility="Collapsed" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Foreground="#FFFF7B8A"
+                                       AutomationProperties.Name="高级色号错误提示"/>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- 位置微调：物理屏幕方向的有界小步长，点一次立即移动已有 overlay；保存才持久化，取消恢复。
+                 这不是自由坐标/anchor 编辑器：只有四个方向按钮，取值按 8 DIP 步长保持 ±200 DIP 内，并且总是被限制在任务栏矩形里。 -->
+            <Separator Margin="0,16,0,4"/>
+            <TextBlock Text="任务栏状态条微调（实时生效）" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,4"/>
+            <TextBlock Text="这四个按钮按屏幕物理方向移动已经打开的任务栏状态条：每次点击 8 DIP，水平/垂直各最多 ±200 DIP，并且始终被限制在任务栏矩形内（窄任务栏上很快到达边界，继续点击不会越界）。这里的上移/下移移动的是状态条本身，不改变任务栏显示项目的顺序——项目排序用列表每行左侧的手柄拖拽，或选中项目后按 Ctrl+↑ / Ctrl+↓。改动立即预览，点击“保存”后才写入设置；取消会恢复打开本窗口时的位置。"
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="↑ 上移 8" Click="NudgeUpClick" Margin="0,0,6,0"
+                        AutomationProperties.Name="实时上移任务栏状态条"
+                        AutomationProperties.HelpText="每次点击把任务栏状态条向上移动 8 DIP，立即生效；保存后持久化，取消会恢复。" />
+                <Button Content="↓ 下移 8" Click="NudgeDownClick" Margin="0,0,6,0"
+                        AutomationProperties.Name="实时下移任务栏状态条"
+                        AutomationProperties.HelpText="每次点击把任务栏状态条向下移动 8 DIP，立即生效；保存后持久化，取消会恢复。" />
+                <Button Content="← 左移 8" Click="NudgeLeftClick" Margin="0,0,6,0"
+                        AutomationProperties.Name="实时左移任务栏状态条"
+                        AutomationProperties.HelpText="每次点击把任务栏状态条向左移动 8 DIP，立即生效；保存后持久化，取消会恢复。" />
+                <Button Content="右移 8 →" Click="NudgeRightClick"
+                        AutomationProperties.Name="实时右移任务栏状态条"
+                        AutomationProperties.HelpText="每次点击把任务栏状态条向右移动 8 DIP，立即生效；保存后持久化，取消会恢复。" />
+            </WrapPanel>
+            <TextBlock x:Name="OffsetStatusText" AutomationProperties.Name="任务栏状态条当前微调量"
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
             <Separator Margin="0,16,0,4"/>
             <TextBlock Text="全局快捷键" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,4"/>
             <TextBlock Text="只影响本应用自己注册的 Windows 全局快捷键，与厂商 Fn 键无关。按键仅允许 A-Z、0-9、F1-F12，且组合必须包含 Ctrl、Alt 或 Win；同一组合不能重复。"
-                       Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
             <StackPanel x:Name="HotkeyPanel" AutomationProperties.Name="全局快捷键组合设置" AutomationProperties.HelpText="按动作设置修饰键和主键；必须包含 Ctrl、Alt 或 Win，主键仅允许 A-Z、0-9、F1-F12，组合不能重复。保存后生效。" />
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                 <Button AutomationProperties.Name="恢复默认全局快捷键组合" AutomationProperties.HelpText="仅恢复编辑中的组合，保存后生效。" Content="恢复默认快捷键" Click="ResetHotkeysClick" />
-                <TextBlock x:Name="HotkeyStatusText" AutomationProperties.Name="快捷键设置状态" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                <TextBlock x:Name="HotkeyStatusText" AutomationProperties.Name="快捷键设置状态" Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </StackPanel>
         </StackPanel>
         </ScrollViewer>

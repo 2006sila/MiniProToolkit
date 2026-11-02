@@ -18,13 +18,23 @@ public static class ToolkitCommandExitCodes
     /// </summary>
     public const int RelayPending = -1;
 
-    /// <summary>No accepting main instance: not running, IPC disabled, connect timeout or a protocol mismatch.</summary>
+    /// <summary>
+    /// No accepting main instance: not running, IPC disabled, a protocol mismatch, or an untrusted pipe server. A
+    /// connect timeout only lands here when the instance lock gave no evidence that an instance exists - with that
+    /// evidence the answer is the "busy or temporarily unreachable" timeout (exit code 6).
+    /// </summary>
     public const int NoRunningInstance = 4;
 
     /// <summary>The running instance refused the command (safety gate, unknown profile) or execution failed.</summary>
     public const int CommandRejected = 5;
 
-    /// <summary>The instance accepted the command but did not answer in time; its state may already have changed.</summary>
+    /// <summary>
+    /// The instance accepted the command but did not answer in time; its state may already have changed. The same code
+    /// is also used when another process holds the instance lock but its channel did not accept the connection in
+    /// time: in that case the answer text says "主实例忙或暂时无法连接，命令未发送" and nothing was sent (see
+    /// <see cref="ToolkitCommandIpcProtocol.ClassifyPreDispatchFailure"/>), so a retry is safe. It is never the
+    /// "no instance" code 4.
+    /// </summary>
     public const int CommandTimedOut = 6;
 
     /// <summary>
@@ -38,6 +48,18 @@ public static class ToolkitCommandExitCodes
     /// creating a second window/hardware instance, so the requested activation may simply be retried later.
     /// </summary>
     public const int AlreadyRunning = 8;
+
+    /// <summary>
+    /// Maps one wire status onto the process exit code a script sees. Pure, so the mapping (in particular "a busy /
+    /// unreachable pre-dispatch failure is 6, not the 'no instance' 4") is testable without the app project.
+    /// </summary>
+    public static int ForIpcStatus(ToolkitCommandIpcStatus status) => status switch
+    {
+        ToolkitCommandIpcStatus.Ok => Success,
+        ToolkitCommandIpcStatus.TimedOut => CommandTimedOut,
+        ToolkitCommandIpcStatus.Unavailable => NoRunningInstance,
+        _ => CommandRejected
+    };
 }
 
 /// <summary>What the host process should do with a parsed command line.</summary>

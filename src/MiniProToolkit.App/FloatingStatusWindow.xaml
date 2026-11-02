@@ -1,0 +1,76 @@
+<Window x:Class="MiniProToolkit.App.FloatingStatusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="桌面悬浮窗"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="Transparent"
+        SizeToContent="WidthAndHeight"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」只取基础色板（键控资源，没有隐式控件样式）。
+                     悬浮窗的背景色 / 文字色 / 字体 / 字号 / 排列完全来自 floating-status.json，
+                     由 FloatingStatusWindow.ApplyAppearance 在运行时写入；这里不覆盖用户偏好。 -->
+                <ResourceDictionary Source="Themes/Obsidian.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <!-- 独立的常驻桌面卡片：不属于任务栏，不 reparent 到 Explorer，也不参与 appbar 计算。
+         整窗分层透明 + 圆角，默认是半透明深色小卡；所有颜色仍是用户配置项。 -->
+    <Border x:Name="RootBorder"
+            CornerRadius="10"
+            BorderThickness="1"
+            BorderBrush="#40FFFFFF"
+            Background="#CC1E2228"
+            Padding="10,4,10,8"
+            SnapsToDevicePixels="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <!-- 星号行：内容比工作区还高时，窗口被 MaxWidth/MaxHeight 夹在工作区内，
+                     其余状态项仍然能在这里滚动看到（不会静默裁掉）。 -->
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- 显式拖动条：只有这块留白区域会拖动窗口，指标本身仍可正常点击（双击/右键）。
+                 锁定位置后这里不再启动 DragMove。 -->
+            <Border x:Name="DragHandle"
+                    Grid.Row="0"
+                    Height="16"
+                    Background="Transparent"
+                    Cursor="SizeAll"
+                    ToolTip="按住左键拖动桌面悬浮窗；锁定位置后不可拖动。"
+                    AutomationProperties.Name="桌面悬浮窗拖动条"
+                    AutomationProperties.HelpText="按住左键拖动整个悬浮窗。锁定位置后拖动条不再移动窗口，但仍可双击指标打开主窗口或右键打开菜单。"
+                    MouseLeftButtonDown="DragHandleMouseLeftButtonDown">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Rectangle Width="2" Height="8" RadiusX="1" RadiusY="1" Fill="#66FFFFFF" />
+                    <Rectangle Width="2" Height="8" RadiusX="1" RadiusY="1" Fill="#66FFFFFF" Margin="3,0,0,0" />
+                    <Rectangle Width="2" Height="8" RadiusX="1" RadiusY="1" Fill="#66FFFFFF" Margin="3,0,0,0" />
+                </StackPanel>
+            </Border>
+            <!-- 内容滚动区：卡片被限制在工作区内时，放不下的指标仍可滚动查看。 -->
+            <ScrollViewer x:Name="StatusContentScroller" Grid.Row="1" Margin="0,4,0,0"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                          Focusable="False"
+                          AutomationProperties.Name="桌面悬浮窗内容滚动区"
+                          AutomationProperties.HelpText="当工作区比悬浮窗还小时，可以在这里滚动查看其余状态项；悬浮窗不会被推到屏幕外。">
+                <!-- 可见的状态根节点：A/C/D/E 四种排列由 FloatingStatusWindow 在每次采样后
+                     （且仅在卡片可见时）用 MiniProToolkit.Core.TaskbarItemLayout.Build 重建。
+                     每个指标单元格自带可访问名称。 -->
+                <Grid x:Name="StatusLayoutRoot"
+                      Background="Transparent"
+                      HorizontalAlignment="Left"
+                      AutomationProperties.Name="桌面悬浮窗状态"
+                      AutomationProperties.HelpText="显示与任务栏状态条相同的实时采样值。双击打开 MiniProToolkit 主窗口，右键打开悬浮窗菜单。"
+                      MouseLeftButtonUp="StatusMouseLeftButtonUp" />
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

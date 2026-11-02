@@ -15,6 +15,7 @@ public partial class DiagnosticsWindow : Window
     private readonly string _historyDirectory;
     private readonly string _eventPath;
     private bool _systemControlBusy;
+    private int _capabilitiesBusy;
     private SystemControlAvailabilitySnapshot _controlAvailability = SystemControlAvailabilitySnapshot.Unavailable("控制尚未检查。");
 
     public DiagnosticsWindow(string curveConfigPath, string telemetryJsonlPath, string telemetryCsvPath, bool demo = false, string? diagnosticEventsPath = null)
@@ -23,6 +24,8 @@ public partial class DiagnosticsWindow : Window
         _historyDirectory = System.IO.Path.GetDirectoryName(telemetryJsonlPath) ?? string.Empty;
         _eventPath = diagnosticEventsPath ?? System.IO.Path.Combine(_historyDirectory, "diagnostic-events.jsonl");
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         var leasePath = GuardianLeaseStore.DefaultPath;
         var appLogPath = AppLog.Path;
         var isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent())
@@ -51,21 +54,35 @@ public partial class DiagnosticsWindow : Window
 
     private async void ProbeCapabilitiesClick(object sender, RoutedEventArgs e)
     {
-        CapabilitiesText.Text = _demo
-            ? "演示模式：不访问硬件，仅列出已纳入产品的硬件能力。"
-            : "正在只读探测 WMI 类与实例……";
+        if (_demo)
+        {
+            CapabilitiesText.Text = "演示模式：不访问硬件，仅列出已纳入产品的硬件能力。" + Environment.NewLine +
+                CapabilityText(HardwareCapabilities.Demo);
+            return;
+        }
+
+        // The capability probe touches the same WMI providers as the control probes. Repeat
+        // clicks must not stack background WMI work, so a running probe owns the flag and a
+        // click while busy is dropped instead of queued.
+        if (Interlocked.CompareExchange(ref _capabilitiesBusy, 1, 0) != 0)
+            return;
+        ProbeCapabilitiesButton.IsEnabled = false;
+        CapabilitiesText.Text = "正在只读探测 WMI 类与实例……";
         try
         {
-            var capabilities = _demo
-                ? HardwareCapabilities.Demo
-                : await Task.Run(() => new HardwareCapabilityProbe().Probe());
-            CapabilitiesText.Text = string.Join(Environment.NewLine,
-                capabilities.Items.Select(item =>
-                    $"{item.DisplayName}: {StateText(item.State)} — {item.Details}"));
+            var capabilities = await Task.Run(() => new HardwareCapabilityProbe().Probe());
+            CapabilitiesText.Text = CapabilityText(capabilities);
         }
         catch (Exception ex)
         {
             CapabilitiesText.Text = $"探测失败：{ex.GetBaseException().Message}";
+        }
+        finally
+        {
+            // Awaits resume on the dispatcher, so releasing the flag here can never race the
+            // control path or a later click; the flag is always released, including on throw.
+            Volatile.Write(ref _capabilitiesBusy, 0);
+            ProbeCapabilitiesButton.IsEnabled = true;
         }
     }
 
@@ -262,6 +279,9 @@ public partial class DiagnosticsWindow : Window
     private static SystemLockKeys ReadLockKeys() => new(
         Keyboard.IsKeyToggled(Key.CapsLock),
         Keyboard.IsKeyToggled(Key.NumLock));
+
+    private static string CapabilityText(HardwareCapabilities capabilities) => string.Join(Environment.NewLine,
+        capabilities.Items.Select(item => $"{item.DisplayName}: {StateText(item.State)} — {item.Details}"));
 
     private static string StateText(CapabilityState state) => state switch
     {

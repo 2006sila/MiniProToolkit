@@ -6,10 +6,25 @@
         Height="700"
         MinWidth="600"
         MinHeight="600"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <DockPanel Margin="14">
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <TextBlock x:Name="ValidationText" AutomationProperties.Name="OSD 设置验证结果" Foreground="#C62828" VerticalAlignment="Center"
+            <TextBlock x:Name="ValidationText" AutomationProperties.Name="OSD 设置验证结果" Foreground="{StaticResource ObsidianDangerBrush}" VerticalAlignment="Center"
                        Margin="0,0,12,0" TextWrapping="Wrap" MaxWidth="320" />
             <Button AutomationProperties.Name="恢复全部 OSD 设置默认值" Content="恢复默认" Click="RestoreDefaultsClick" Margin="0,0,6,0" />
             <Button AutomationProperties.Name="取消 OSD 设置修改" Content="取消" Click="CancelClick" Margin="0,0,6,0" />
@@ -19,7 +34,7 @@
             <StackPanel>
                 <TextBlock Text="OSD 外观设置" FontSize="22" FontWeight="SemiBold" />
                 <TextBlock Text="只影响弹窗显示：颜色、字体、透明度、字号和位置都会保存到 osd.json，不读写硬件，也不影响风扇控制、Guardian 或采样。"
-                           Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
+                           Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150" />
@@ -42,7 +57,7 @@
                               SelectionChanged="ColorPresetChanged" />
                     <TextBox x:Name="ForegroundTextBox" AutomationProperties.Name="OSD 文字前景色自定义值" AutomationProperties.HelpText="输入 #RRGGBB 或 #AARRGGBB；留空跟随主题。" Grid.Column="3" MaxLength="9" VerticalAlignment="Center"
                              TextChanged="ColorTextChanged" />
-                    <TextBlock x:Name="ForegroundErrorText" AutomationProperties.Name="前景色验证结果" Grid.Column="4" Foreground="#C62828" FontSize="11"
+                    <TextBlock x:Name="ForegroundErrorText" AutomationProperties.Name="前景色验证结果" Grid.Column="4" Foreground="{StaticResource ObsidianDangerBrush}" FontSize="11"
                                VerticalAlignment="Center" TextWrapping="Wrap" Margin="8,0,0,0" />
 
                     <TextBlock Text="背景色" Grid.Row="1" VerticalAlignment="Center" Margin="0,10,0,0" />
@@ -50,7 +65,7 @@
                               Margin="0,10,0,0" SelectionChanged="ColorPresetChanged" />
                     <TextBox x:Name="BackgroundTextBox" AutomationProperties.Name="OSD 背景色自定义值" AutomationProperties.HelpText="输入 #RRGGBB 或 #AARRGGBB；留空跟随主题。" Grid.Row="1" Grid.Column="3" MaxLength="9"
                              VerticalAlignment="Center" Margin="0,10,0,0" TextChanged="ColorTextChanged" />
-                    <TextBlock x:Name="BackgroundErrorText" AutomationProperties.Name="背景色验证结果" Grid.Row="1" Grid.Column="4" Foreground="#C62828" FontSize="11"
+                    <TextBlock x:Name="BackgroundErrorText" AutomationProperties.Name="背景色验证结果" Grid.Row="1" Grid.Column="4" Foreground="{StaticResource ObsidianDangerBrush}" FontSize="11"
                                VerticalAlignment="Center" TextWrapping="Wrap" Margin="8,10,0,0" />
 
                     <TextBlock Text="背景不透明度" Grid.Row="2" VerticalAlignment="Center" Margin="0,12,0,0" />
@@ -80,7 +95,7 @@
                         <ComboBox x:Name="EventCombo" AutomationProperties.Name="OSD 模板事件" AutomationProperties.HelpText="选择要编辑显示模板的事件；不会触发事件。" SelectionChanged="EventChanged" />
                         <CheckBox x:Name="TemplateOverrideCheck" AutomationProperties.Name="使用事件自定义模板" AutomationProperties.HelpText="不勾选表示保持原事件输出，不是关闭事件。" Content="使用自定义模板（不勾选＝保持原事件输出，不是关闭事件）"
                                   Margin="0,10,0,6" Click="TemplateOverrideChanged" />
-                        <TextBlock x:Name="TemplateSafetyText" AutomationProperties.Name="事件模板安全限制说明" Foreground="#B26A00" TextWrapping="Wrap" />
+                        <TextBlock x:Name="TemplateSafetyText" AutomationProperties.Name="事件模板安全限制说明" Foreground="{StaticResource ObsidianWarningBrush}" TextWrapping="Wrap" />
                         <StackPanel x:Name="TemplateFields">
                             <TextBlock Text="标题（留空跟随事件）" Margin="0,8,0,2" />
                             <TextBox x:Name="TemplateTitleText" AutomationProperties.Name="事件模板标题" AutomationProperties.HelpText="最多 80 字；留空跟随事件，安全事件标题不可覆盖。" MaxLength="80" />
@@ -94,12 +109,12 @@
                         </StackPanel>
                         <Button AutomationProperties.Name="恢复所选事件模板默认值" Content="恢复此事件默认" Click="RestoreEventDefaultsClick" HorizontalAlignment="Left" />
                         <TextBlock Text="不支持变量、表达式、脚本、文件或 URI 加载。安全事件的标题、正文、图标和严重度不可覆盖；说明会标为“自定义说明”。保存全部修改后生效，取消不改变当前设置。"
-                                   TextWrapping="Wrap" Foreground="#666" FontSize="11" Margin="0,8,0,0" />
+                                   TextWrapping="Wrap" Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" Margin="0,8,0,0" />
                     </StackPanel>
                 </GroupBox>
-                <TextBlock x:Name="SummaryText" AutomationProperties.Name="OSD 设置摘要" Foreground="#333" TextWrapping="Wrap" Margin="0,14,0,0" />
+                <TextBlock x:Name="SummaryText" AutomationProperties.Name="OSD 设置摘要" Foreground="{StaticResource ObsidianTextPrimaryBrush}" TextWrapping="Wrap" Margin="0,14,0,0" />
                 <TextBlock Text="颜色：下拉里是常用预设，也可以直接输入任意颜色，必须是 #RRGGBB 或 #AARRGGBB（长度受限，非法值无法保存）；留空＝跟随主题。字体家族：可直接输入本机已安装的任意字体名，留空＝跟随主题；名称不合法会立即提示，名称合法但本机未安装时保存后弹窗自动回退默认字体。字号 12–40，位置 9 宫格。这些自定义会叠加在主题之上，切换主题不会重置它们。"
-                           Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0" />
+                           Foreground="{StaticResource ObsidianTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0" />
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

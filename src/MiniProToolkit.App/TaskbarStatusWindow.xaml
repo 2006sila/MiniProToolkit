@@ -6,16 +6,42 @@
         ShowInTaskbar="False"
         ShowActivated="False"
         Topmost="False"
-        Background="#202124"
-        SizeToContent="WidthAndHeight">
-    <Border x:Name="RootBorder" Padding="6,1" Background="#202124">
-        <StackPanel x:Name="StatusPanel" Orientation="Horizontal">
-            <TextBlock x:Name="StatusText"
-                       Foreground="#E8EAED"
-                       FontFamily="Segoe UI"
-                       FontSize="12"
-                       VerticalAlignment="Center"
-                       Text="CPU --°C | Fan ---- RPM | --" />
-        </StackPanel>
+        AllowsTransparency="True"
+        Background="Transparent"
+        SizeToContent="WidthAndHeight"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」只取基础色板（全部是键控资源，没有隐式控件样式）。
+                     任务栏 overlay 的背景色 / 文字色 / 字体 / 字号 / 间距 / 顺序全部来自用户配置，
+                     由 TaskbarStatusWindow.ApplySettings 在运行时写入；这里不覆盖任何用户偏好，
+                     也不套用任何会改背景或文字的隐式控件样式。 -->
+                <ResourceDictionary Source="Themes/Obsidian.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <!-- TrafficMonitor 式浮层：整窗分层透明，只有状态文字像素可见。根 Border 不画背景、无圆角、
+         无边框，内边距由 ApplyLayout 按横排/竖排压到最小；Win11 的系统圆角由
+         ObsidianWindowChrome.ApplyDontRoundCorners 关掉，所以文字是直接映在任务栏像素上的。
+         背景色仍是用户配置项：默认 #00000000（全透明），用户显式填 #AARRGGBB / #RRGGBB 时才成为
+         文字紧贴的可选底卡。 -->
+    <Border x:Name="RootBorder"
+            Padding="2,0"
+            CornerRadius="0"
+            BorderThickness="0"
+            ClipToBounds="True"
+            Background="Transparent">
+        <!-- 可见的排列根节点：A/C/D/E 四种模式由 TaskbarStatusWindow 在每次采样后重建子元素。
+             没有隐藏的 StatusText 转发元素：每个指标单元格自带可访问名称，根节点只描述整体含
+             义与点击手势。纯布局计划（TaskbarItemLayout.Build）已经按安全预算决定可见项和 +N
+             溢出项，这里的 ClipToBounds 只是估算失准时的兜底，不用来提高信息量。 -->
+        <Grid x:Name="StatusLayoutRoot"
+              ClipToBounds="True"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Center"
+              AutomationProperties.Name="任务栏状态"
+              AutomationProperties.HelpText="左键单击打开 MiniProToolkit 主窗口，右键单击打开控制菜单。" />
     </Border>
 </Window>

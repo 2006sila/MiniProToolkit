@@ -1,6 +1,5 @@
 using System.Windows;
 using MiniProToolkit.Core;
-using Media = System.Windows.Media;
 
 namespace MiniProToolkit.App;
 
@@ -17,10 +16,6 @@ namespace MiniProToolkit.App;
 /// </summary>
 public partial class OsdSettingsWindow : Window
 {
-    private static readonly Media.Brush ErrorBrush = Freeze(0xC6, 0x28, 0x28);
-    private static readonly Media.Brush WarningBrush = Freeze(0xB2, 0x6A, 0x00);
-    private static readonly Media.Brush MutedBrush = Freeze(0x66, 0x66, 0x66);
-
     private bool _syncing;
     private readonly Dictionary<string, OsdEventTemplate> _templates = new(StringComparer.Ordinal);
     private OsdEventDefinition? _selectedEvent;
@@ -33,6 +28,8 @@ public partial class OsdSettingsWindow : Window
         IReadOnlyDictionary<string, OsdEventTemplate>? templates = null)
     {
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         LoadAppearance((appearance ?? OsdAppearance.Default).Sanitize());
         foreach (var entry in OsdEventTemplates.SanitizeOverrides(templates) ?? [])
             _templates[entry.Key] = entry.Value;
@@ -254,9 +251,12 @@ public partial class OsdSettingsWindow : Window
         if (FontFamilyHint is not null)
         {
             FontFamilyHint.Text = fontFamilyError ?? fontFamilyHint ?? string.Empty;
+            // 纯展示的颜色：直接取本窗口已合并的 Obsidian 主题词，键缺失时用同值回退；不涉及硬件或配置。
             FontFamilyHint.Foreground = fontFamilyError is not null
-                ? ErrorBrush
-                : fontFamilyHintIsWarning ? WarningBrush : MutedBrush;
+                ? ObsidianTheme.BrushOf(this, "ObsidianDangerBrush")
+                : fontFamilyHintIsWarning
+                    ? ObsidianTheme.BrushOf(this, "ObsidianWarningBrush")
+                    : ObsidianTheme.BrushOf(this, "ObsidianTextSecondaryBrush");
         }
 
         var hasErrors = foregroundError is not null || backgroundError is not null || fontFamilyError is not null;
@@ -344,13 +344,6 @@ public partial class OsdSettingsWindow : Window
 
     private static bool SameColor(string? left, string? right) =>
         string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-
-    private static Media.Brush Freeze(byte red, byte green, byte blue)
-    {
-        var brush = new Media.SolidColorBrush(Media.Color.FromRgb(red, green, blue));
-        brush.Freeze();
-        return brush;
-    }
 
     private sealed record IconEntry(OsdIcon? Icon, string Label)
     {

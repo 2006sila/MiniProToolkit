@@ -1,1552 +1,1357 @@
-{
-  "schemaVersion": 1,
-  "packageVersion": "0.1.0",
-  "archiveRoot": "MiniProToolkit-source-v0.1.0/",
-  "hashAlgorithm": "SHA-256",
-  "selfHashPolicy": "SOURCE-ARCHIVE-MANIFEST.json is intentionally excluded from its own entries; external archive evidence records its hash and ZIP hash.",
-  "fileCountExcludingManifest": 218,
-  "primaryLicense": "MIT (LICENSE at archive root, Copyright (c) 2026 2006sila)",
-  "excludedContent": [
-    "research",
-    ".pi",
-    ".git",
-    "internal planning documents",
-    "logs and evidence",
-    "dist",
-    "artifacts",
-    "lite",
-    "bin",
-    "obj",
-    "TestResults",
-    "credentials and binary payloads"
-  ],
-  "transforms": [],
-  "files": [
-    {
-      "path": ".gitignore",
-      "length": 429,
-      "sha256": "45533BDC14E8FF2AD35795895BE31D10534C85C36CAAF4BBF57E9E40086B9CD3",
-      "originalLength": 429,
-      "originalSha256": "45533BDC14E8FF2AD35795895BE31D10534C85C36CAAF4BBF57E9E40086B9CD3"
-    },
-    {
-      "path": "Directory.Build.props",
-      "length": 228,
-      "sha256": "D3A4CD8C3442D5F321D88DAF590EA187A3F9A9F6233EE78102C56569FB4265D6",
-      "originalLength": 228,
-      "originalSha256": "D3A4CD8C3442D5F321D88DAF590EA187A3F9A9F6233EE78102C56569FB4265D6"
-    },
-    {
-      "path": "LICENSE",
-      "length": 1065,
-      "sha256": "D29EBF752311F4D0E2CFCF1BEB29354862D2D62671C63AAEDA94D73579CBD224",
-      "originalLength": 1065,
-      "originalSha256": "D29EBF752311F4D0E2CFCF1BEB29354862D2D62671C63AAEDA94D73579CBD224"
-    },
-    {
-      "path": "MiniProToolkit.sln",
-      "length": 2994,
-      "sha256": "F1044DAF8E12707A214E05F1A8A6AEE7A630D86162CC3BA919F0059AE691C93A",
-      "originalLength": 2994,
-      "originalSha256": "F1044DAF8E12707A214E05F1A8A6AEE7A630D86162CC3BA919F0059AE691C93A"
-    },
-    {
-      "path": "README.md",
-      "length": 11488,
-      "sha256": "6B9DCE42DC71A3673F6A91397DB428952C182A38B118DC3AEE12A3306A302A98",
-      "originalLength": 11488,
-      "originalSha256": "6B9DCE42DC71A3673F6A91397DB428952C182A38B118DC3AEE12A3306A302A98"
-    },
-    {
-      "path": "SOURCE-ARCHIVE-NOTICE.md",
-      "length": 4058,
-      "sha256": "5403B74DCD720356D0DA0802046E954540895EFCDD48013D57919393A03F5B7D",
-      "originalLength": 4058,
-      "originalSha256": "5403B74DCD720356D0DA0802046E954540895EFCDD48013D57919393A03F5B7D"
-    },
-    {
-      "path": "THIRD-PARTY-NOTICES.md",
-      "length": 5664,
-      "sha256": "7CD9DE485471786E4BB6C1B62976A5A1363BF98D83E225A0BC889DCAB493FF74",
-      "originalLength": 5664,
-      "originalSha256": "7CD9DE485471786E4BB6C1B62976A5A1363BF98D83E225A0BC889DCAB493FF74"
-    },
-    {
-      "path": "docs/architecture.md",
-      "length": 49872,
-      "sha256": "58A7E9F5BE7922F950E14BDC1EAC3AE26889B3A97277BA98AFFCA3199E192C89",
-      "originalLength": 49872,
-      "originalSha256": "58A7E9F5BE7922F950E14BDC1EAC3AE26889B3A97277BA98AFFCA3199E192C89"
-    },
-    {
-      "path": "docs/fan-calibration.md",
-      "length": 5890,
-      "sha256": "E2284E6E750992407827DB69684F6DDFF590C4B43A75E61EAC6C1C1574F6FD2C",
-      "originalLength": 5890,
-      "originalSha256": "E2284E6E750992407827DB69684F6DDFF590C4B43A75E61EAC6C1C1574F6FD2C"
-    },
-    {
-      "path": "docs/fan-control-hardening.md",
-      "length": 17422,
-      "sha256": "32ECF9DEFC7189DCCF40DC88F4316D7D92D918E8E32E4E03A6920856337679A4",
-      "originalLength": 17422,
-      "originalSha256": "32ECF9DEFC7189DCCF40DC88F4316D7D92D918E8E32E4E03A6920856337679A4"
-    },
-    {
-      "path": "docs/history-and-diagnostics.md",
-      "length": 27085,
-      "sha256": "2BC967D5DFE79F9AA13C41D28610FF85010A5D1FC4D47A3C50BC7C5DCA0DE372",
-      "originalLength": 27085,
-      "originalSha256": "2BC967D5DFE79F9AA13C41D28610FF85010A5D1FC4D47A3C50BC7C5DCA0DE372"
-    },
-    {
-      "path": "docs/license.md",
-      "length": 2654,
-      "sha256": "9456B0D6817B8F0B4B8A5AB81ACFD415193014541B6A180B4B339E7FBB9B3DE3",
-      "originalLength": 2654,
-      "originalSha256": "9456B0D6817B8F0B4B8A5AB81ACFD415193014541B6A180B4B339E7FBB9B3DE3"
-    },
-    {
-      "path": "docs/phase-3-validation.md",
-      "length": 1991,
-      "sha256": "BF6B9C576D846502D0C050B9F745F10E1A49211B2FD28A067FE40CC5AF6F76A1",
-      "originalLength": 1991,
-      "originalSha256": "BF6B9C576D846502D0C050B9F745F10E1A49211B2FD28A067FE40CC5AF6F76A1"
-    },
-    {
-      "path": "docs/phase-4-validation.md",
-      "length": 1939,
-      "sha256": "2C59F8761F8465AB918341AE26E68E2555237DD5A7D40F1B5EC7A7728BC1324E",
-      "originalLength": 1939,
-      "originalSha256": "2C59F8761F8465AB918341AE26E68E2555237DD5A7D40F1B5EC7A7728BC1324E"
-    },
-    {
-      "path": "docs/phase-5-validation.md",
-      "length": 15692,
-      "sha256": "AA07179C67E75B50A6342888ED6AD58282F3CC36A0EF64F40A92190A5CA6937F",
-      "originalLength": 15692,
-      "originalSha256": "AA07179C67E75B50A6342888ED6AD58282F3CC36A0EF64F40A92190A5CA6937F"
-    },
-    {
-      "path": "docs/product-roadmap.md",
-      "length": 19263,
-      "sha256": "D9F83098F02F97667E63A0711F8596F68C8C82BEC1DF93767EABE2DDFAE99A78",
-      "originalLength": 19263,
-      "originalSha256": "D9F83098F02F97667E63A0711F8596F68C8C82BEC1DF93767EABE2DDFAE99A78"
-    },
-    {
-      "path": "docs/profile-automation-and-installer.md",
-      "length": 6211,
-      "sha256": "86B1C59014A13DC76BE0BDD042B364C0D35FE06BB3B88B1538CE80F33D9555EE",
-      "originalLength": 6211,
-      "originalSha256": "86B1C59014A13DC76BE0BDD042B364C0D35FE06BB3B88B1538CE80F33D9555EE"
-    },
-    {
-      "path": "docs/release-packaging.md",
-      "length": 22219,
-      "sha256": "0CF596053AC8BFF01865E692B3AF098A3DB689A6830E636870633D90DE7FAC2B",
-      "originalLength": 22219,
-      "originalSha256": "0CF596053AC8BFF01865E692B3AF098A3DB689A6830E636870633D90DE7FAC2B"
-    },
-    {
-      "path": "installer/MiniProToolkit.iss",
-      "length": 4538,
-      "sha256": "988F2149A2E4B2A3131D864538FA786C1C3F79DFFFD0D120EB89F73E56C31DA9",
-      "originalLength": 4538,
-      "originalSha256": "988F2149A2E4B2A3131D864538FA786C1C3F79DFFFD0D120EB89F73E56C31DA9"
-    },
-    {
-      "path": "scripts/build-installer.ps1",
-      "length": 2748,
-      "sha256": "B38225A86C71BB2A5E260474E23F117EE464308777539180A3971171008592EC",
-      "originalLength": 2748,
-      "originalSha256": "B38225A86C71BB2A5E260474E23F117EE464308777539180A3971171008592EC"
-    },
-    {
-      "path": "scripts/check-ps-syntax.ps1",
-      "length": 7129,
-      "sha256": "56D6E8D13D8DF368FAABC3208CB5A71978EB94A25074E17AB643AF32659CF49D",
-      "originalLength": 7129,
-      "originalSha256": "56D6E8D13D8DF368FAABC3208CB5A71978EB94A25074E17AB643AF32659CF49D"
-    },
-    {
-      "path": "scripts/guardian-status.ps1",
-      "length": 1234,
-      "sha256": "297A0F2A3DC8A56A37C65C9AEAF6C9F36CC30BC29219E5E5257E28D0E3F43EB5",
-      "originalLength": 1234,
-      "originalSha256": "297A0F2A3DC8A56A37C65C9AEAF6C9F36CC30BC29219E5E5257E28D0E3F43EB5"
-    },
-    {
-      "path": "scripts/install-guardian.ps1",
-      "length": 948,
-      "sha256": "5BBCF60B0ECDCBF27EB5A5735C64F78E951F6ECF0D6A204F16259908EDD12384",
-      "originalLength": 948,
-      "originalSha256": "5BBCF60B0ECDCBF27EB5A5735C64F78E951F6ECF0D6A204F16259908EDD12384"
-    },
-    {
-      "path": "scripts/install-package.ps1",
-      "length": 3142,
-      "sha256": "7AC4546A79DDA18852BDB1CBD00A03AF24FC2FDA66A5042B707F88BD3D061F9F",
-      "originalLength": 3142,
-      "originalSha256": "7AC4546A79DDA18852BDB1CBD00A03AF24FC2FDA66A5042B707F88BD3D061F9F"
-    },
-    {
-      "path": "scripts/package-archive.ps1",
-      "length": 7672,
-      "sha256": "D07196E57F0F310863034FA28EB642D2F1E3FF941FD25A11B307F0BFBF4034B7",
-      "originalLength": 7672,
-      "originalSha256": "D07196E57F0F310863034FA28EB642D2F1E3FF941FD25A11B307F0BFBF4034B7"
-    },
-    {
-      "path": "scripts/package-common.ps1",
-      "length": 26178,
-      "sha256": "2ECE64F2578416304CB1F7D8457C15215972D0196DD6A1664046F5943C5E9858",
-      "originalLength": 26178,
-      "originalSha256": "2ECE64F2578416304CB1F7D8457C15215972D0196DD6A1664046F5943C5E9858"
-    },
-    {
-      "path": "scripts/publish-release.ps1",
-      "length": 24353,
-      "sha256": "2A1003FC3223FFCB0F6A34302A37922366E06E308496BB4F056ACA668A689AF0",
-      "originalLength": 24353,
-      "originalSha256": "2A1003FC3223FFCB0F6A34302A37922366E06E308496BB4F056ACA668A689AF0"
-    },
-    {
-      "path": "scripts/repair-package.ps1",
-      "length": 3323,
-      "sha256": "CD6909F18C2063695B428691D18D2FC4F0646FC8A58810EDF9E36E4EDBA21810",
-      "originalLength": 3323,
-      "originalSha256": "CD6909F18C2063695B428691D18D2FC4F0646FC8A58810EDF9E36E4EDBA21810"
-    },
-    {
-      "path": "scripts/restore-ec-automatic.ps1",
-      "length": 2403,
-      "sha256": "11F37806E2BC96095724AAFFB991AA59CE6A82A8BA56810A69A1FCE08AEAE47E",
-      "originalLength": 2403,
-      "originalSha256": "11F37806E2BC96095724AAFFB991AA59CE6A82A8BA56810A69A1FCE08AEAE47E"
-    },
-    {
-      "path": "scripts/test-release-gates.ps1",
-      "length": 15388,
-      "sha256": "614B07A89DC025743C15920847E60B7CCBB3DE1DAB3EC8DA552C8A1061847364",
-      "originalLength": 15388,
-      "originalSha256": "614B07A89DC025743C15920847E60B7CCBB3DE1DAB3EC8DA552C8A1061847364"
-    },
-    {
-      "path": "scripts/uninstall-guardian.ps1",
-      "length": 1350,
-      "sha256": "B7C0A3AF798BBE979398D0D8B1568194B780E68C0F90C3867246CC04F8973E57",
-      "originalLength": 1350,
-      "originalSha256": "B7C0A3AF798BBE979398D0D8B1568194B780E68C0F90C3867246CC04F8973E57"
-    },
-    {
-      "path": "scripts/uninstall-package.ps1",
-      "length": 2122,
-      "sha256": "803AA26D503BAFAE7E6DE7D0C33E55FA00E0A7DC82B4CC879B8B1B527B87850F",
-      "originalLength": 2122,
-      "originalSha256": "803AA26D503BAFAE7E6DE7D0C33E55FA00E0A7DC82B4CC879B8B1B527B87850F"
-    },
-    {
-      "path": "scripts/upgrade-package.ps1",
-      "length": 3178,
-      "sha256": "C43A74ED33DA085DEB972BD92FED66160AF7F584C1C76C75295F8E686DF3BE6A",
-      "originalLength": 3178,
-      "originalSha256": "C43A74ED33DA085DEB972BD92FED66160AF7F584C1C76C75295F8E686DF3BE6A"
-    },
-    {
-      "path": "scripts/validate-package.ps1",
-      "length": 1218,
-      "sha256": "99E8F0D5DFB0138A6720B668E82998D5EAB89DE0E7A76F54197BE064FF7FB604",
-      "originalLength": 1218,
-      "originalSha256": "99E8F0D5DFB0138A6720B668E82998D5EAB89DE0E7A76F54197BE064FF7FB604"
-    },
-    {
-      "path": "src/MiniProToolkit.App/App.xaml",
-      "length": 471,
-      "sha256": "079BE7EBA7E9EBEF89E66A3A2ACB07B8F81C3645DC43916680D3E5ECF644F9EA",
-      "originalLength": 471,
-      "originalSha256": "079BE7EBA7E9EBEF89E66A3A2ACB07B8F81C3645DC43916680D3E5ECF644F9EA"
-    },
-    {
-      "path": "src/MiniProToolkit.App/App.xaml.cs",
-      "length": 13653,
-      "sha256": "B7A15814CB97FBA8F1295F320E925E40B851E8B3FC594D804FEE06F5297819EE",
-      "originalLength": 13653,
-      "originalSha256": "B7A15814CB97FBA8F1295F320E925E40B851E8B3FC594D804FEE06F5297819EE"
-    },
-    {
-      "path": "src/MiniProToolkit.App/AppCommandPipeClient.cs",
-      "length": 6105,
-      "sha256": "BE42F977BBC5FCF5B01F2490FD65DA0DB8F1BD9AA396DD7993CBF5CA81E62D5B",
-      "originalLength": 6105,
-      "originalSha256": "BE42F977BBC5FCF5B01F2490FD65DA0DB8F1BD9AA396DD7993CBF5CA81E62D5B"
-    },
-    {
-      "path": "src/MiniProToolkit.App/AppCommandPipeServer.cs",
-      "length": 15073,
-      "sha256": "150E6597C65EB630D0D3113C47F792BFC2E6B10C07017E7DC4546F3B9C10238F",
-      "originalLength": 15073,
-      "originalSha256": "150E6597C65EB630D0D3113C47F792BFC2E6B10C07017E7DC4546F3B9C10238F"
-    },
-    {
-      "path": "src/MiniProToolkit.App/AppLog.cs",
-      "length": 949,
-      "sha256": "A1EA2B535F0CFE75203EC83817F3E8D35C921297CC0E54992584A3465DE973B7",
-      "originalLength": 949,
-      "originalSha256": "A1EA2B535F0CFE75203EC83817F3E8D35C921297CC0E54992584A3465DE973B7"
-    },
-    {
-      "path": "src/MiniProToolkit.App/DiagnosticsWindow.xaml",
-      "length": 10618,
-      "sha256": "70E3138DC0557CB604DE58DDF9A440ECEDB00C2F1108E83957BC83FF0B03B0BA",
-      "originalLength": 10618,
-      "originalSha256": "70E3138DC0557CB604DE58DDF9A440ECEDB00C2F1108E83957BC83FF0B03B0BA"
-    },
-    {
-      "path": "src/MiniProToolkit.App/DiagnosticsWindow.xaml.cs",
-      "length": 16506,
-      "sha256": "17E7310B37C86ACEF6A5A58F3F97E0241EED8DBC5F9409B0BF60AA719BD1BA1D",
-      "originalLength": 16506,
-      "originalSha256": "17E7310B37C86ACEF6A5A58F3F97E0241EED8DBC5F9409B0BF60AA719BD1BA1D"
-    },
-    {
-      "path": "src/MiniProToolkit.App/DisplaySourceSettingsWindow.xaml",
-      "length": 2375,
-      "sha256": "86186D80394A258660A7F827BF491A4C23C86263BB6EEB8D7E3EE857558556DD",
-      "originalLength": 2375,
-      "originalSha256": "86186D80394A258660A7F827BF491A4C23C86263BB6EEB8D7E3EE857558556DD"
-    },
-    {
-      "path": "src/MiniProToolkit.App/DisplaySourceSettingsWindow.xaml.cs",
-      "length": 2173,
-      "sha256": "53FC0DBC8FA6E43E02C0080F76FD2ED0E296437495B358B8DDFA388A24414494",
-      "originalLength": 2173,
-      "originalSha256": "53FC0DBC8FA6E43E02C0080F76FD2ED0E296437495B358B8DDFA388A24414494"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanCalibrationEditorWindow.xaml",
-      "length": 3871,
-      "sha256": "2F395BA192F5417BE1B001BDEE812C2B74F383FD3342952BB7AE396935CB9816",
-      "originalLength": 3871,
-      "originalSha256": "2F395BA192F5417BE1B001BDEE812C2B74F383FD3342952BB7AE396935CB9816"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanCalibrationEditorWindow.xaml.cs",
-      "length": 11439,
-      "sha256": "A9339C791F2157EDA4AD8E94402D210129149B05DCF71E02A547DC7539D82F53",
-      "originalLength": 11439,
-      "originalSha256": "A9339C791F2157EDA4AD8E94402D210129149B05DCF71E02A547DC7539D82F53"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanCurveEditorWindow.xaml",
-      "length": 10752,
-      "sha256": "1F6B5AFCE99C379D932338B3A9F2A5BAD4B9E6E897571D3CA96FEBF0C2493CBF",
-      "originalLength": 10752,
-      "originalSha256": "1F6B5AFCE99C379D932338B3A9F2A5BAD4B9E6E897571D3CA96FEBF0C2493CBF"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanCurveEditorWindow.xaml.cs",
-      "length": 32864,
-      "sha256": "2432167BD8010F7AC3C0D06002BC7780AD7E613F664E72C4F1C92AB1632CC874",
-      "originalLength": 32864,
-      "originalSha256": "2432167BD8010F7AC3C0D06002BC7780AD7E613F664E72C4F1C92AB1632CC874"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanProfileManagerWindow.xaml",
-      "length": 3004,
-      "sha256": "C2C4713686B891690F9B3B8080C189FC894353D07BA0AD549C6376896BEA5749",
-      "originalLength": 3004,
-      "originalSha256": "C2C4713686B891690F9B3B8080C189FC894353D07BA0AD549C6376896BEA5749"
-    },
-    {
-      "path": "src/MiniProToolkit.App/FanProfileManagerWindow.xaml.cs",
-      "length": 7931,
-      "sha256": "7854F7C94D23E07BEA3907609E751B4387B5B1364DA1B7E9756DC2178534C687",
-      "originalLength": 7931,
-      "originalSha256": "7854F7C94D23E07BEA3907609E751B4387B5B1364DA1B7E9756DC2178534C687"
-    },
-    {
-      "path": "src/MiniProToolkit.App/GuardianAvailability.cs",
-      "length": 478,
-      "sha256": "C3440EECBF64BF5F59CDE23D2B97152BB651BF7C21A0FD9D90996906F54646C5",
-      "originalLength": 478,
-      "originalSha256": "C3440EECBF64BF5F59CDE23D2B97152BB651BF7C21A0FD9D90996906F54646C5"
-    },
-    {
-      "path": "src/MiniProToolkit.App/GuardianLeasedFanTarget.cs",
-      "length": 1865,
-      "sha256": "EE438686EF57B98AF2A6FC20637F709DFEEE2A4339DCED50E36E56618EEBC27F",
-      "originalLength": 1865,
-      "originalSha256": "EE438686EF57B98AF2A6FC20637F709DFEEE2A4339DCED50E36E56618EEBC27F"
-    },
-    {
-      "path": "src/MiniProToolkit.App/GuardianProcessIdentity.cs",
-      "length": 318,
-      "sha256": "4FA20D4E65EBE98BEEEFB83B0541CE1E1E4B852C1D962A4EB97715A6094F9B18",
-      "originalLength": 318,
-      "originalSha256": "4FA20D4E65EBE98BEEEFB83B0541CE1E1E4B852C1D962A4EB97715A6094F9B18"
-    },
-    {
-      "path": "src/MiniProToolkit.App/HistoryWindow.xaml",
-      "length": 9771,
-      "sha256": "CC035EABF06BBF309096511B9A0730704A890B87B4CA36FB3561600B0B7D87FE",
-      "originalLength": 9771,
-      "originalSha256": "CC035EABF06BBF309096511B9A0730704A890B87B4CA36FB3561600B0B7D87FE"
-    },
-    {
-      "path": "src/MiniProToolkit.App/HistoryWindow.xaml.cs",
-      "length": 18947,
-      "sha256": "1A87E09CA1D6E687732A0AB16A0E4508E914885B69476A0914609A4B1A37DA89",
-      "originalLength": 18947,
-      "originalSha256": "1A87E09CA1D6E687732A0AB16A0E4508E914885B69476A0914609A4B1A37DA89"
-    },
-    {
-      "path": "src/MiniProToolkit.App/MainWindow.xaml",
-      "length": 8703,
-      "sha256": "78051FEBC0A009803262DB4316317A3744F724B4C2AB44BFE26401D3D49ED2AC",
-      "originalLength": 8703,
-      "originalSha256": "78051FEBC0A009803262DB4316317A3744F724B4C2AB44BFE26401D3D49ED2AC"
-    },
-    {
-      "path": "src/MiniProToolkit.App/MainWindow.xaml.cs",
-      "length": 176206,
-      "sha256": "F231B8DE1A28B3176C814E8B6DF75340E735D0D4E4E405A0B9DA316876FFACF0",
-      "originalLength": 176206,
-      "originalSha256": "F231B8DE1A28B3176C814E8B6DF75340E735D0D4E4E405A0B9DA316876FFACF0"
-    },
-    {
-      "path": "src/MiniProToolkit.App/MiniProToolkit.App.csproj",
-      "length": 1931,
-      "sha256": "BEF046789B164CAA5E3D44B359BD855070A26D3AF753F9E37C14D88F7D577FCA",
-      "originalLength": 1931,
-      "originalSha256": "BEF046789B164CAA5E3D44B359BD855070A26D3AF753F9E37C14D88F7D577FCA"
-    },
-    {
-      "path": "src/MiniProToolkit.App/NativeMethods.cs",
-      "length": 9964,
-      "sha256": "1C268F74E624DE1B2353B965671AE0D9721EFAFDA948C53A03E9B288F623460F",
-      "originalLength": 9964,
-      "originalSha256": "1C268F74E624DE1B2353B965671AE0D9721EFAFDA948C53A03E9B288F623460F"
-    },
-    {
-      "path": "src/MiniProToolkit.App/OsdSettingsWindow.xaml",
-      "length": 11003,
-      "sha256": "3E30061511BBC596214B714CFC20F2F49003CDE5C25DC9405BF3D2CB30152A0D",
-      "originalLength": 11003,
-      "originalSha256": "3E30061511BBC596214B714CFC20F2F49003CDE5C25DC9405BF3D2CB30152A0D"
-    },
-    {
-      "path": "src/MiniProToolkit.App/OsdSettingsWindow.xaml.cs",
-      "length": 16607,
-      "sha256": "3E62D2F487A2072ABBFF387CB230CFD5E67851C4857B73C757F752440B109E01",
-      "originalLength": 16607,
-      "originalSha256": "3E62D2F487A2072ABBFF387CB230CFD5E67851C4857B73C757F752440B109E01"
-    },
-    {
-      "path": "src/MiniProToolkit.App/OsdWindow.xaml",
-      "length": 2691,
-      "sha256": "C7FD0348ED0AADF35E534977A264FC3598CB5694CEEE5F594E393E275487AA20",
-      "originalLength": 2691,
-      "originalSha256": "C7FD0348ED0AADF35E534977A264FC3598CB5694CEEE5F594E393E275487AA20"
-    },
-    {
-      "path": "src/MiniProToolkit.App/OsdWindow.xaml.cs",
-      "length": 13906,
-      "sha256": "0A92ECA9E9D431DEBBC3DE2F2EE9637923FD1456003052FFF6F79B188C3A34CF",
-      "originalLength": 13906,
-      "originalSha256": "0A92ECA9E9D431DEBBC3DE2F2EE9637923FD1456003052FFF6F79B188C3A34CF"
-    },
-    {
-      "path": "src/MiniProToolkit.App/ProfileAutomationProcessSampler.cs",
-      "length": 6332,
-      "sha256": "E7C7C9B3A4D4B047BF7AA41B8677C468B6E0F7217DE89CA8C0525EE1607EF7C5",
-      "originalLength": 6332,
-      "originalSha256": "E7C7C9B3A4D4B047BF7AA41B8677C468B6E0F7217DE89CA8C0525EE1607EF7C5"
-    },
-    {
-      "path": "src/MiniProToolkit.App/ProfileAutomationWindow.xaml",
-      "length": 7972,
-      "sha256": "B9A6692E6B4B51C63C3369C17A253704AF826B33BA69A41598E208A8497C11F5",
-      "originalLength": 7972,
-      "originalSha256": "B9A6692E6B4B51C63C3369C17A253704AF826B33BA69A41598E208A8497C11F5"
-    },
-    {
-      "path": "src/MiniProToolkit.App/ProfileAutomationWindow.xaml.cs",
-      "length": 13924,
-      "sha256": "5E2B53439C009B3A41DE7D23D90730FEE85F01BE7BDBA03C3E4182FB6D5109B3",
-      "originalLength": 13924,
-      "originalSha256": "5E2B53439C009B3A41DE7D23D90730FEE85F01BE7BDBA03C3E4182FB6D5109B3"
-    },
-    {
-      "path": "src/MiniProToolkit.App/StartupRegistration.cs",
-      "length": 1204,
-      "sha256": "1F91AC79A0CB0DEA0E31981B3ABCA28FD6E34223DD4532762F4B8F556AFE474F",
-      "originalLength": 1204,
-      "originalSha256": "1F91AC79A0CB0DEA0E31981B3ABCA28FD6E34223DD4532762F4B8F556AFE474F"
-    },
-    {
-      "path": "src/MiniProToolkit.App/TaskbarSettingsWindow.xaml",
-      "length": 6166,
-      "sha256": "ECC0147CFEEB6A8D8B85F1032AEB4BF0C73041787D769B7DBF37699A788EE605",
-      "originalLength": 6166,
-      "originalSha256": "ECC0147CFEEB6A8D8B85F1032AEB4BF0C73041787D769B7DBF37699A788EE605"
-    },
-    {
-      "path": "src/MiniProToolkit.App/TaskbarSettingsWindow.xaml.cs",
-      "length": 11657,
-      "sha256": "855E6690DFFD2B0207DFFB1B0451E181EC13980453EB7AA9E6DD9B20C3F6BE26",
-      "originalLength": 11657,
-      "originalSha256": "855E6690DFFD2B0207DFFB1B0451E181EC13980453EB7AA9E6DD9B20C3F6BE26"
-    },
-    {
-      "path": "src/MiniProToolkit.App/TaskbarStatusWindow.xaml",
-      "length": 867,
-      "sha256": "D596A07291373A7D0A1209D11F563E7E434B22645D45C25CB0C84D9C3A01581C",
-      "originalLength": 867,
-      "originalSha256": "D596A07291373A7D0A1209D11F563E7E434B22645D45C25CB0C84D9C3A01581C"
-    },
-    {
-      "path": "src/MiniProToolkit.App/TaskbarStatusWindow.xaml.cs",
-      "length": 18907,
-      "sha256": "CD717073825E0DB2BDF35D411E44BECB446084A7D7516DA8D882EAC0D0FE2C68",
-      "originalLength": 18907,
-      "originalSha256": "CD717073825E0DB2BDF35D411E44BECB446084A7D7516DA8D882EAC0D0FE2C68"
-    },
-    {
-      "path": "src/MiniProToolkit.App/app.manifest",
-      "length": 1165,
-      "sha256": "BC43C2E8BFEB2667CFFA75B6AD23170A5942DF1216931AD201F0936E6F9DE4A2",
-      "originalLength": 1165,
-      "originalSha256": "BC43C2E8BFEB2667CFFA75B6AD23170A5942DF1216931AD201F0936E6F9DE4A2"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/AuxTemperatureSelection.cs",
-      "length": 5168,
-      "sha256": "20E46F2A3911F780887953CCE586421D5F54D5DC3BCDBB285CD0BB4055A0BF64",
-      "originalLength": 5168,
-      "originalSha256": "20E46F2A3911F780887953CCE586421D5F54D5DC3BCDBB285CD0BB4055A0BF64"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/BrightnessPanelSelection.cs",
-      "length": 2927,
-      "sha256": "DAEF46E1A96E7ABAD3E692CFF75A4BE3A1A7999A923BAC337DDF2DBF45FDE8B2",
-      "originalLength": 2927,
-      "originalSha256": "DAEF46E1A96E7ABAD3E692CFF75A4BE3A1A7999A923BAC337DDF2DBF45FDE8B2"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/CpuClassFrequency.cs",
-      "length": 8374,
-      "sha256": "FD167C8B788FB57C48B0F1BD4C132DC7409E85AE679575B0A73CD64C2BA58724",
-      "originalLength": 8374,
-      "originalSha256": "FD167C8B788FB57C48B0F1BD4C132DC7409E85AE679575B0A73CD64C2BA58724"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/CpuDisplaySourceSettings.cs",
-      "length": 10579,
-      "sha256": "451DADDAC62457FD707AFFBAAD327984FFAFAA0501E8E425C9EF0DC326EE5EE7",
-      "originalLength": 10579,
-      "originalSha256": "451DADDAC62457FD707AFFBAAD327984FFAFAA0501E8E425C9EF0DC326EE5EE7"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/CpuFrequency.cs",
-      "length": 7737,
-      "sha256": "F6C6BB901DE663CD9EFF9491094BB50C9E736CF383154A7642E8DE8CFA9856D2",
-      "originalLength": 7737,
-      "originalSha256": "F6C6BB901DE663CD9EFF9491094BB50C9E736CF383154A7642E8DE8CFA9856D2"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/DiagnosticEventStore.cs",
-      "length": 3103,
-      "sha256": "AD4A7712E07DF6C9785292BFEF1C3FA5DADD420849959AB0DD80B9B803F2485E",
-      "originalLength": 3103,
-      "originalSha256": "AD4A7712E07DF6C9785292BFEF1C3FA5DADD420849959AB0DD80B9B803F2485E"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/DiagnosticRedactor.cs",
-      "length": 620,
-      "sha256": "87DCDE893B7E8D925772441D0C20B04A48858C6F80B2227BCE860C51B932F769",
-      "originalLength": 620,
-      "originalSha256": "87DCDE893B7E8D925772441D0C20B04A48858C6F80B2227BCE860C51B932F769"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ExitRequestGate.cs",
-      "length": 5844,
-      "sha256": "C087190A4A57C8D30A7DC5BC289416C13D7EE5E00366465B4FBC0685007D5EC2",
-      "originalLength": 5844,
-      "originalSha256": "C087190A4A57C8D30A7DC5BC289416C13D7EE5E00366465B4FBC0685007D5EC2"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCalibration.cs",
-      "length": 4724,
-      "sha256": "2F8E62BCB3919487D8F76196AADB5AC960F3A31C6E176FB9B8A3C498B2693D1E",
-      "originalLength": 4724,
-      "originalSha256": "2F8E62BCB3919487D8F76196AADB5AC960F3A31C6E176FB9B8A3C498B2693D1E"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCalibrationSampling.cs",
-      "length": 6542,
-      "sha256": "BB6326AB6DB970C7B8B509167A38DD7382764D0E6D8D52361FDD74D3AB0F9892",
-      "originalLength": 6542,
-      "originalSha256": "BB6326AB6DB970C7B8B509167A38DD7382764D0E6D8D52361FDD74D3AB0F9892"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCalibrationStore.cs",
-      "length": 3217,
-      "sha256": "37BFCF53FB6984734F293C66B8FAD286FE1A3B0E5E0C8BBEB37E6533D03CAEC8",
-      "originalLength": 3217,
-      "originalSha256": "37BFCF53FB6984734F293C66B8FAD286FE1A3B0E5E0C8BBEB37E6533D03CAEC8"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurve.cs",
-      "length": 30461,
-      "sha256": "5FD7D30885CD0A98FD31EB48BC99CB47A21FC58D85D0DFA87AE888C4E6D775FF",
-      "originalLength": 30461,
-      "originalSha256": "5FD7D30885CD0A98FD31EB48BC99CB47A21FC58D85D0DFA87AE888C4E6D775FF"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveCalibrationCompatibility.cs",
-      "length": 1564,
-      "sha256": "81349E6322074B12914B7BE01D2B307455AFD71FDEE96B0C1BDAEB098A0D4488",
-      "originalLength": 1564,
-      "originalSha256": "81349E6322074B12914B7BE01D2B307455AFD71FDEE96B0C1BDAEB098A0D4488"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveConfigurationStore.cs",
-      "length": 4460,
-      "sha256": "4B1354E363F079826D0FE04C684840732A19B9AD317E587F9882AE0A9DB9BE3D",
-      "originalLength": 4460,
-      "originalSha256": "4B1354E363F079826D0FE04C684840732A19B9AD317E587F9882AE0A9DB9BE3D"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveController.cs",
-      "length": 3635,
-      "sha256": "2750666321F26A593E52DC80756B88DDB53143037EA7A9E73A16E65C5603D2BA",
-      "originalLength": 3635,
-      "originalSha256": "2750666321F26A593E52DC80756B88DDB53143037EA7A9E73A16E65C5603D2BA"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveLeaseGate.cs",
-      "length": 3905,
-      "sha256": "AE840B4EAD090F17F1D52A29F58B793C3BA67D1DFE1222180A490662FBE92DEF",
-      "originalLength": 3905,
-      "originalSha256": "AE840B4EAD090F17F1D52A29F58B793C3BA67D1DFE1222180A490662FBE92DEF"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveRpmFeedback.cs",
-      "length": 10107,
-      "sha256": "FD95D6FD8DDD277013C80C9824580586FE171C571D780FDF43D6A0D0C3B8CBD3",
-      "originalLength": 10107,
-      "originalSha256": "FD95D6FD8DDD277013C80C9824580586FE171C571D780FDF43D6A0D0C3B8CBD3"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveRpmTracking.cs",
-      "length": 5502,
-      "sha256": "2E542E79651DC5F1544B3C70ECE6448DD1244DEB9EA84A33A1FEB5E170220DF9",
-      "originalLength": 5502,
-      "originalSha256": "2E542E79651DC5F1544B3C70ECE6448DD1244DEB9EA84A33A1FEB5E170220DF9"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanCurveStatus.cs",
-      "length": 10948,
-      "sha256": "F0F60B38A10D3E69838361FFDCBA29C16A51A0EE807681F597A24B04E99BC936",
-      "originalLength": 10948,
-      "originalSha256": "F0F60B38A10D3E69838361FFDCBA29C16A51A0EE807681F597A24B04E99BC936"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanProfile.cs",
-      "length": 1823,
-      "sha256": "1C6D141AD276ACDAC0E75FF1CA3CD56835E2378A0E0F0F693F02B5474DDC8301",
-      "originalLength": 1823,
-      "originalSha256": "1C6D141AD276ACDAC0E75FF1CA3CD56835E2378A0E0F0F693F02B5474DDC8301"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanProfileApplication.cs",
-      "length": 2319,
-      "sha256": "55356E5769D1D30B27DC75873DE23424A29BC58884C1EA169DE8481CCC5254D3",
-      "originalLength": 2319,
-      "originalSha256": "55356E5769D1D30B27DC75873DE23424A29BC58884C1EA169DE8481CCC5254D3"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanProfileStore.cs",
-      "length": 6743,
-      "sha256": "3326DA5A5EAB701E2A7CF429E0F56916DE03921C967D17BA8257A48B514ABF86",
-      "originalLength": 6743,
-      "originalSha256": "3326DA5A5EAB701E2A7CF429E0F56916DE03921C967D17BA8257A48B514ABF86"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FanRpmFeedbackController.cs",
-      "length": 6653,
-      "sha256": "1515726726AFD6454ABB8578C88855C5534531648167754A5079D367E69A381C",
-      "originalLength": 6653,
-      "originalSha256": "1515726726AFD6454ABB8578C88855C5534531648167754A5079D367E69A381C"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/FixedRpmControlSession.cs",
-      "length": 11892,
-      "sha256": "80A288C658A6CFE40C5B60F0B06F20725A7BD1AA418233BD8A9C5E3780A28ABF",
-      "originalLength": 11892,
-      "originalSha256": "80A288C658A6CFE40C5B60F0B06F20725A7BD1AA418233BD8A9C5E3780A28ABF"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/GuardianLease.cs",
-      "length": 11779,
-      "sha256": "1AB090A7DB7ED570BA487111733F010829D33A34566867D66C45EFE296374070",
-      "originalLength": 11779,
-      "originalSha256": "1AB090A7DB7ED570BA487111733F010829D33A34566867D66C45EFE296374070"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/HardwareCapabilities.cs",
-      "length": 858,
-      "sha256": "8574CCAE00A03DAB43D56307C6C7C1F82FE519FD154249FFE101EF407AC1D75E",
-      "originalLength": 858,
-      "originalSha256": "8574CCAE00A03DAB43D56307C6C7C1F82FE519FD154249FFE101EF407AC1D75E"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/HardwareSnapshot.cs",
-      "length": 5108,
-      "sha256": "7DC45E93A8E3A05B3E36A5B4FBB846CCC4982B5A5C7901EF2F1016043B438BE7",
-      "originalLength": 5108,
-      "originalSha256": "7DC45E93A8E3A05B3E36A5B4FBB846CCC4982B5A5C7901EF2F1016043B438BE7"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/HistoryChartScale.cs",
-      "length": 2770,
-      "sha256": "AB729413FAEBDA6EAA3F2C01C55B22755CECE3496BC286ED9A8E968B4D46E4E5",
-      "originalLength": 2770,
-      "originalSha256": "AB729413FAEBDA6EAA3F2C01C55B22755CECE3496BC286ED9A8E968B4D46E4E5"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/HotkeySettings.cs",
-      "length": 23894,
-      "sha256": "64A39D40BEFC29E976465521DBD47C2F8EE65CAEE8EABBED366D3637824086C0",
-      "originalLength": 23894,
-      "originalSha256": "64A39D40BEFC29E976465521DBD47C2F8EE65CAEE8EABBED366D3637824086C0"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/LibreHardwareMonitorAuxSensorSelection.cs",
-      "length": 6416,
-      "sha256": "473B3B1D942C894277E0A92302F15E658F1F6EBA052FD7D16AE71CF4087CBD4A",
-      "originalLength": 6416,
-      "originalSha256": "473B3B1D942C894277E0A92302F15E658F1F6EBA052FD7D16AE71CF4087CBD4A"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/LibreHardwareMonitorSensorSelection.cs",
-      "length": 8931,
-      "sha256": "42ED534A22F29C00281475EA5953F69BCDC80D57C33967665945D8C99EB01A48",
-      "originalLength": 8931,
-      "originalSha256": "42ED534A22F29C00281475EA5953F69BCDC80D57C33967665945D8C99EB01A48"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/MiniProToolkit.Core.csproj",
-      "length": 259,
-      "sha256": "5440949482E297C45F5DF9D9AFDEEAA6909D82EC50A9D5839ED8A4B8457C0161",
-      "originalLength": 259,
-      "originalSha256": "5440949482E297C45F5DF9D9AFDEEAA6909D82EC50A9D5839ED8A4B8457C0161"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdAppearance.cs",
-      "length": 18049,
-      "sha256": "6DDEFC2ACA1DFAAD5CB99647D17D89E9B96484196125778E6B2792572B5CE749",
-      "originalLength": 18049,
-      "originalSha256": "6DDEFC2ACA1DFAAD5CB99647D17D89E9B96484196125778E6B2792572B5CE749"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdEventTemplates.cs",
-      "length": 7570,
-      "sha256": "7F7FE5FF4EDF19886E97180AC46542844AC7E4C030A496D7923694CBD84F1DFB",
-      "originalLength": 7570,
-      "originalSha256": "7F7FE5FF4EDF19886E97180AC46542844AC7E4C030A496D7923694CBD84F1DFB"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdMessage.cs",
-      "length": 9667,
-      "sha256": "BC130E57D59F43AA1ED349AFA8D8301FC4ACBAEACF330049B7CE0882DCBDE6B2",
-      "originalLength": 9667,
-      "originalSha256": "BC130E57D59F43AA1ED349AFA8D8301FC4ACBAEACF330049B7CE0882DCBDE6B2"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdNotifications.cs",
-      "length": 9232,
-      "sha256": "993C60FC39E3786612EBC2CFEC3227AB503E1951F20A245CD4F93D61FCA38D06",
-      "originalLength": 9232,
-      "originalSha256": "993C60FC39E3786612EBC2CFEC3227AB503E1951F20A245CD4F93D61FCA38D06"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdPreferences.cs",
-      "length": 8308,
-      "sha256": "0512D0C61CFC74FB9238677595DDB6BD911D3A9D0BCA10F593F8B38078CFF7D1",
-      "originalLength": 8308,
-      "originalSha256": "0512D0C61CFC74FB9238677595DDB6BD911D3A9D0BCA10F593F8B38078CFF7D1"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/OsdTheme.cs",
-      "length": 10251,
-      "sha256": "6E820D1D7F32DA1BECA66BD78AC770105A3400F4D2B6EC14088B5EA87A80FD7D",
-      "originalLength": 10251,
-      "originalSha256": "6E820D1D7F32DA1BECA66BD78AC770105A3400F4D2B6EC14088B5EA87A80FD7D"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/PowerModeWriteVerification.cs",
-      "length": 5131,
-      "sha256": "EDC2C7ECC8990C543AA07CA2F4103D65025C840D6D1DE931086B19C38B554171",
-      "originalLength": 5131,
-      "originalSha256": "EDC2C7ECC8990C543AA07CA2F4103D65025C840D6D1DE931086B19C38B554171"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/PowerTransitionRecovery.cs",
-      "length": 2825,
-      "sha256": "4E548CD7CAA8CDB9B5723ED99AC4F2B4AA8307D80DB6951788A37AA8DBCE75FF",
-      "originalLength": 2825,
-      "originalSha256": "4E548CD7CAA8CDB9B5723ED99AC4F2B4AA8307D80DB6951788A37AA8DBCE75FF"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ProfileAutomation.cs",
-      "length": 34862,
-      "sha256": "905527F67E53C29A17634D4FE2A6C111D22B4942F86A7E834B54B233BF26BE1D",
-      "originalLength": 34862,
-      "originalSha256": "905527F67E53C29A17634D4FE2A6C111D22B4942F86A7E834B54B233BF26BE1D"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ProfileAutomationHistory.cs",
-      "length": 10384,
-      "sha256": "3E5F1C2793529DC6EDB640CDDFA84E40C36A67226E3C16F2718037375D89D530",
-      "originalLength": 10384,
-      "originalSha256": "3E5F1C2793529DC6EDB640CDDFA84E40C36A67226E3C16F2718037375D89D530"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ProfileAutomationStatus.cs",
-      "length": 12770,
-      "sha256": "7479F50A021182C6A483B71FEC59D1FA9EE9ED2030969BC98A1436FD72FEED05",
-      "originalLength": 12770,
-      "originalSha256": "7479F50A021182C6A483B71FEC59D1FA9EE9ED2030969BC98A1436FD72FEED05"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ShutdownRecovery.cs",
-      "length": 3490,
-      "sha256": "E519AB73AABE514E4E31A8495B4D2E2ECB7CCFDF0976C06385E18E448FA62CE7",
-      "originalLength": 3490,
-      "originalSha256": "E519AB73AABE514E4E31A8495B4D2E2ECB7CCFDF0976C06385E18E448FA62CE7"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/SingleFlightOperationWorker.cs",
-      "length": 5538,
-      "sha256": "B6CCF63BECF65609F8885429DAEB86D5D798D91B0D0075C1C9B9C990A71C11EA",
-      "originalLength": 5538,
-      "originalSha256": "B6CCF63BECF65609F8885429DAEB86D5D798D91B0D0075C1C9B9C990A71C11EA"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/SystemIndicators.cs",
-      "length": 13910,
-      "sha256": "EF8C87A3C91F155C7E161C5D85DBAB4A4B1442CE50DC7166251B6EC9236CC792",
-      "originalLength": 13910,
-      "originalSha256": "EF8C87A3C91F155C7E161C5D85DBAB4A4B1442CE50DC7166251B6EC9236CC792"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TaskbarClickGesture.cs",
-      "length": 1486,
-      "sha256": "7939679644E75ADFDFF119B4A8D0A9128DBDB9D5EA541FA8D4320A8CFDD6E412",
-      "originalLength": 1486,
-      "originalSha256": "7939679644E75ADFDFF119B4A8D0A9128DBDB9D5EA541FA8D4320A8CFDD6E412"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TaskbarDisplaySettings.cs",
-      "length": 10112,
-      "sha256": "BC35A9585223BE8CF8C2891D9EBA939923A44DBF3A6F0462F70C377E19938886",
-      "originalLength": 10112,
-      "originalSha256": "BC35A9585223BE8CF8C2891D9EBA939923A44DBF3A6F0462F70C377E19938886"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TaskbarOverlayLayout.cs",
-      "length": 6923,
-      "sha256": "5C08DD68E50864AEBDD1AF92BCCCD92A4D91D4E291E7FFA43711A44D0FD1D806",
-      "originalLength": 6923,
-      "originalSha256": "5C08DD68E50864AEBDD1AF92BCCCD92A4D91D4E291E7FFA43711A44D0FD1D806"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TaskbarRefreshPolicy.cs",
-      "length": 8033,
-      "sha256": "F23B6CD306A330A5056E060108D12AB6D9C6AAF859F2C7EB3A67A773B85E8985",
-      "originalLength": 8033,
-      "originalSha256": "F23B6CD306A330A5056E060108D12AB6D9C6AAF859F2C7EB3A67A773B85E8985"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/Telemetry.cs",
-      "length": 17054,
-      "sha256": "5EF10B89497CAB7E0EFDF700DECFF8A248647EB373C5C4631C6FBF5F7EBF2437",
-      "originalLength": 17054,
-      "originalSha256": "5EF10B89497CAB7E0EFDF700DECFF8A248647EB373C5C4631C6FBF5F7EBF2437"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TelemetryFileIndex.cs",
-      "length": 10380,
-      "sha256": "87EA85F20270EF4773A6C0FEA56E2F12139533F124A61F7E1E0E19C8BB30F9C0",
-      "originalLength": 10380,
-      "originalSha256": "87EA85F20270EF4773A6C0FEA56E2F12139533F124A61F7E1E0E19C8BB30F9C0"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TelemetryHistory.cs",
-      "length": 12183,
-      "sha256": "63EE42E4F952A19B9921319602292FCF26F5B40015427A4E73982A0E12810F65",
-      "originalLength": 12183,
-      "originalSha256": "63EE42E4F952A19B9921319602292FCF26F5B40015427A4E73982A0E12810F65"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/TelemetryRetentionSettings.cs",
-      "length": 6597,
-      "sha256": "FCB91FC8A1F6A0824A81E74C735FBDCED793FD1BEBEB171F8B7D21E50C9E95D1",
-      "originalLength": 6597,
-      "originalSha256": "FCB91FC8A1F6A0824A81E74C735FBDCED793FD1BEBEB171F8B7D21E50C9E95D1"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ToolkitCommandIpc.cs",
-      "length": 25947,
-      "sha256": "2E714892456B26B1E72D904F3BB6CE35ADB462BE174E8A79377DC7C66314D1CC",
-      "originalLength": 25947,
-      "originalSha256": "2E714892456B26B1E72D904F3BB6CE35ADB462BE174E8A79377DC7C66314D1CC"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ToolkitCommandLine.cs",
-      "length": 15229,
-      "sha256": "4A66A2C1736749B39BC17B98B9F8F54E9CF451CFE81324BD7CF526D4AD6C7011",
-      "originalLength": 15229,
-      "originalSha256": "4A66A2C1736749B39BC17B98B9F8F54E9CF451CFE81324BD7CF526D4AD6C7011"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ToolkitCommandOutcome.cs",
-      "length": 7438,
-      "sha256": "85CEBD35EE62382FFA63A8F9213CCB25ADC3DFCD382BC1D2553F581F34A5C48C",
-      "originalLength": 7438,
-      "originalSha256": "85CEBD35EE62382FFA63A8F9213CCB25ADC3DFCD382BC1D2553F581F34A5C48C"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ToolkitCommandRequestCache.cs",
-      "length": 9305,
-      "sha256": "9C482ECCEE011887722C4AB46D0473F616C7C36FD40D9F634EF9EF6F63EF14E6",
-      "originalLength": 9305,
-      "originalSha256": "9C482ECCEE011887722C4AB46D0473F616C7C36FD40D9F634EF9EF6F63EF14E6"
-    },
-    {
-      "path": "src/MiniProToolkit.Core/ToolkitSingleInstanceLock.cs",
-      "length": 6097,
-      "sha256": "476F29F0575229F90F910EED873137E7970111BBB6DF6C7202DF483DCBD4266A",
-      "originalLength": 6097,
-      "originalSha256": "476F29F0575229F90F910EED873137E7970111BBB6DF6C7202DF483DCBD4266A"
-    },
-    {
-      "path": "src/MiniProToolkit.Guardian/GuardianWorker.cs",
-      "length": 5761,
-      "sha256": "F05CA5B2426A83822FA7ACF624BEFA05B579B30B13EEFEEAC9293573799247FB",
-      "originalLength": 5761,
-      "originalSha256": "F05CA5B2426A83822FA7ACF624BEFA05B579B30B13EEFEEAC9293573799247FB"
-    },
-    {
-      "path": "src/MiniProToolkit.Guardian/GuardianWorkerOptions.cs",
-      "length": 446,
-      "sha256": "41100F1023258D48A4AF026F716C1F8A469EA33F860E89878BF9243360763B73",
-      "originalLength": 446,
-      "originalSha256": "41100F1023258D48A4AF026F716C1F8A469EA33F860E89878BF9243360763B73"
-    },
-    {
-      "path": "src/MiniProToolkit.Guardian/MiniProToolkit.Guardian.csproj",
-      "length": 764,
-      "sha256": "FABDBD99AE9DE0784BFA7AA354710975A219C18BB427E9D5BC2CCF2F94B7A51F",
-      "originalLength": 764,
-      "originalSha256": "FABDBD99AE9DE0784BFA7AA354710975A219C18BB427E9D5BC2CCF2F94B7A51F"
-    },
-    {
-      "path": "src/MiniProToolkit.Guardian/Program.cs",
-      "length": 773,
-      "sha256": "28B5DE9EFFE75D46E3DB7E6641DBA93741DC8B02F7EF825EF05D19EFAE73E288",
-      "originalLength": 773,
-      "originalSha256": "28B5DE9EFFE75D46E3DB7E6641DBA93741DC8B02F7EF825EF05D19EFAE73E288"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/AudioEndpointReader.cs",
-      "length": 34091,
-      "sha256": "8630B9464E311CAD951BC829EFA8B5C897F8E5321780EEE9BE558BE94FFBE8B6",
-      "originalLength": 34091,
-      "originalSha256": "8630B9464E311CAD951BC829EFA8B5C897F8E5321780EEE9BE558BE94FFBE8B6"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/BrightnessReader.cs",
-      "length": 13654,
-      "sha256": "751E6C33CD5380FFC6D0104DE4C601A7FD2590046EC63CF4BDA9B6080F257037",
-      "originalLength": 13654,
-      "originalSha256": "751E6C33CD5380FFC6D0104DE4C601A7FD2590046EC63CF4BDA9B6080F257037"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/CpuClassFrequencyReader.cs",
-      "length": 8976,
-      "sha256": "68C708732654244CF720BCD3704B855713B25FC661495F2AA3CF140877F747B1",
-      "originalLength": 8976,
-      "originalSha256": "68C708732654244CF720BCD3704B855713B25FC661495F2AA3CF140877F747B1"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/CpuFrequencyReader.cs",
-      "length": 8238,
-      "sha256": "F58CDD26D158801E077DF68E3A793995BA27C3BE1AF05EFA0A10B5DC8DCC1140",
-      "originalLength": 8238,
-      "originalSha256": "F58CDD26D158801E077DF68E3A793995BA27C3BE1AF05EFA0A10B5DC8DCC1140"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/HardwareCapabilityProbe.cs",
-      "length": 8002,
-      "sha256": "CFAE95F3336E64BB12B9A679113667072EC55E5193DD130B185E99A4BD6D933A",
-      "originalLength": 8002,
-      "originalSha256": "CFAE95F3336E64BB12B9A679113667072EC55E5193DD130B185E99A4BD6D933A"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/LibreHardwareMonitorAuxTemperatureSensor.cs",
-      "length": 6137,
-      "sha256": "548E2B2B60872087DB412B58508A23E384AB77308F7DC0BB56F9A3D054D4299A",
-      "originalLength": 6137,
-      "originalSha256": "548E2B2B60872087DB412B58508A23E384AB77308F7DC0BB56F9A3D054D4299A"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/LibreHardwareMonitorCpuSensor.cs",
-      "length": 11286,
-      "sha256": "509067DE1D88A30CAFB53162ED03CA817CBAC512CE1DBB7143D07281EB56049E",
-      "originalLength": 11286,
-      "originalSha256": "509067DE1D88A30CAFB53162ED03CA817CBAC512CE1DBB7143D07281EB56049E"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/LibreHardwareMonitorGpuSensor.cs",
-      "length": 10794,
-      "sha256": "75A3B69090C4C6FA39B93A61C60C28DDA6B246F80CDEA5438B822BE54A73877B",
-      "originalLength": 10794,
-      "originalSha256": "75A3B69090C4C6FA39B93A61C60C28DDA6B246F80CDEA5438B822BE54A73877B"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/MiniProToolkit.Hardware.csproj",
-      "length": 721,
-      "sha256": "AAF9432F254150216239818D3D01CD511DA2202069310A7CA5624B7705BDEFFB",
-      "originalLength": 721,
-      "originalSha256": "AAF9432F254150216239818D3D01CD511DA2202069310A7CA5624B7705BDEFFB"
-    },
-    {
-      "path": "src/MiniProToolkit.Hardware/PowerSwitchHardware.cs",
-      "length": 16834,
-      "sha256": "F5C09C5D0D060E2B2C9D8E81C51431513A4FA768F021CFB16628845AC740609B",
-      "originalLength": 16834,
-      "originalSha256": "F5C09C5D0D060E2B2C9D8E81C51431513A4FA768F021CFB16628845AC740609B"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/AccessibilityMarkupTests.cs",
-      "length": 11300,
-      "sha256": "B049B446DAEB8F6FD39EE3A084A6C702745E8A1E7C63DB6FBD307E086B3E08B9",
-      "originalLength": 11300,
-      "originalSha256": "B049B446DAEB8F6FD39EE3A084A6C702745E8A1E7C63DB6FBD307E086B3E08B9"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/AuxTemperatureTests.cs",
-      "length": 11476,
-      "sha256": "4D49243CE54A4303143C2126ADE97BEDC62647FF955709BD9562C1C99F17ADE2",
-      "originalLength": 11476,
-      "originalSha256": "4D49243CE54A4303143C2126ADE97BEDC62647FF955709BD9562C1C99F17ADE2"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/BrightnessPanelSelectionTests.cs",
-      "length": 6626,
-      "sha256": "89ED334AD7DE96B9581EAAAD102165A3083E32C8A68B33B448C3990DD56A6D47",
-      "originalLength": 6626,
-      "originalSha256": "89ED334AD7DE96B9581EAAAD102165A3083E32C8A68B33B448C3990DD56A6D47"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/CpuClassFrequencyTelemetryTests.cs",
-      "length": 12459,
-      "sha256": "1A70064327D0C9AB493F57DFEBD6F72BF50DD3723692B8C519BABAD5F2BB6E5A",
-      "originalLength": 12459,
-      "originalSha256": "1A70064327D0C9AB493F57DFEBD6F72BF50DD3723692B8C519BABAD5F2BB6E5A"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/CpuClassFrequencyTests.cs",
-      "length": 9219,
-      "sha256": "7F59373B22A91F4A1F8E3D0A0678307103702F38496799233A46F8EEC516F926",
-      "originalLength": 9219,
-      "originalSha256": "7F59373B22A91F4A1F8E3D0A0678307103702F38496799233A46F8EEC516F926"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/CpuDisplaySourceSettingsTests.cs",
-      "length": 15447,
-      "sha256": "18F0725A85D58E899E31F0C57FC24143EA65F4AC380BCF741C4A4B9B2588698F",
-      "originalLength": 15447,
-      "originalSha256": "18F0725A85D58E899E31F0C57FC24143EA65F4AC380BCF741C4A4B9B2588698F"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/CpuFrequencyTelemetryTests.cs",
-      "length": 10186,
-      "sha256": "F7C282932DEB076BE58A5D4D97BD4ABD91D0EAB2822B7E19BAD59ADCCAB7BF03",
-      "originalLength": 10186,
-      "originalSha256": "F7C282932DEB076BE58A5D4D97BD4ABD91D0EAB2822B7E19BAD59ADCCAB7BF03"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/CpuFrequencyTests.cs",
-      "length": 4539,
-      "sha256": "3F379675648AC565451B5DE01AA5CF2F9E7350F5D456DF0FD5DC44DE5214973D",
-      "originalLength": 4539,
-      "originalSha256": "3F379675648AC565451B5DE01AA5CF2F9E7350F5D456DF0FD5DC44DE5214973D"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/DiagnosticEventStoreTests.cs",
-      "length": 1039,
-      "sha256": "D720217AF4BCCE7CC65BC8EEA0316A2BE21D015559B864293B261A3BD42C4F3F",
-      "originalLength": 1039,
-      "originalSha256": "D720217AF4BCCE7CC65BC8EEA0316A2BE21D015559B864293B261A3BD42C4F3F"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCalibrationSamplingTests.cs",
-      "length": 6630,
-      "sha256": "D37A5354603E4E4C23796A63C1D57EA5EE5BBF1D39D563C294D08DDADED99758",
-      "originalLength": 6630,
-      "originalSha256": "D37A5354603E4E4C23796A63C1D57EA5EE5BBF1D39D563C294D08DDADED99758"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCalibrationStoreTests.cs",
-      "length": 4491,
-      "sha256": "2DF2714B44B9B92AE215201FDB1F3C26C41B8E5D051BA5C31EE8653595B9697F",
-      "originalLength": 4491,
-      "originalSha256": "2DF2714B44B9B92AE215201FDB1F3C26C41B8E5D051BA5C31EE8653595B9697F"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCalibrationTests.cs",
-      "length": 1498,
-      "sha256": "115C3E48DCF94B27AD628ECEBEB6828BA40446B7FBAFA982A6E8A3D2E650B63D",
-      "originalLength": 1498,
-      "originalSha256": "115C3E48DCF94B27AD628ECEBEB6828BA40446B7FBAFA982A6E8A3D2E650B63D"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveCalibrationCompatibilityTests.cs",
-      "length": 5369,
-      "sha256": "96CBA6DDD3F30CD6A97D66E3D62ED29F2757B3776C16CC944584AD0CF9B11CAF",
-      "originalLength": 5369,
-      "originalSha256": "96CBA6DDD3F30CD6A97D66E3D62ED29F2757B3776C16CC944584AD0CF9B11CAF"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveCalibrationWiringTests.cs",
-      "length": 7198,
-      "sha256": "4E0D61A16D39AEA69F1DF6E886C7E71C3B6A890D2490C6EC6A004B696085C67F",
-      "originalLength": 7198,
-      "originalSha256": "4E0D61A16D39AEA69F1DF6E886C7E71C3B6A890D2490C6EC6A004B696085C67F"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveConfigurationTests.cs",
-      "length": 13599,
-      "sha256": "2F75169E3E845014EFAA450A659DAE926DA97C82D8DB5BA06B0326621D60449C",
-      "originalLength": 13599,
-      "originalSha256": "2F75169E3E845014EFAA450A659DAE926DA97C82D8DB5BA06B0326621D60449C"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveControllerTests.cs",
-      "length": 2578,
-      "sha256": "E6C4D066496364387924C9719DFF6E3F6218345DF6AC37650EA259E1E13B4B85",
-      "originalLength": 2578,
-      "originalSha256": "E6C4D066496364387924C9719DFF6E3F6218345DF6AC37650EA259E1E13B4B85"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveDefaultTemplateTests.cs",
-      "length": 9390,
-      "sha256": "EFCB4887F4640A636A5807393D77632D60BA0EBFB520C5592D9DD85AE66C4601",
-      "originalLength": 9390,
-      "originalSha256": "EFCB4887F4640A636A5807393D77632D60BA0EBFB520C5592D9DD85AE66C4601"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveEmergencyLatchTests.cs",
-      "length": 5453,
-      "sha256": "EE91A25BF1153F531367659359FC24941A45FFA5047075D361EBEE6A2A1213AD",
-      "originalLength": 5453,
-      "originalSha256": "EE91A25BF1153F531367659359FC24941A45FFA5047075D361EBEE6A2A1213AD"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveLeaseGateTests.cs",
-      "length": 7655,
-      "sha256": "E7994C37B0E5B54E0E56C5CB2DBE95179FC4BB7B5EE856882A5C9AF054AB9CA0",
-      "originalLength": 7655,
-      "originalSha256": "E7994C37B0E5B54E0E56C5CB2DBE95179FC4BB7B5EE856882A5C9AF054AB9CA0"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveRampTests.cs",
-      "length": 1885,
-      "sha256": "A925CB5B402AE33BA02AF4EB8F4219A61243A1BC3A547BF1AB93380AD63BF29C",
-      "originalLength": 1885,
-      "originalSha256": "A925CB5B402AE33BA02AF4EB8F4219A61243A1BC3A547BF1AB93380AD63BF29C"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveRpmFeedbackConfigurationTests.cs",
-      "length": 5405,
-      "sha256": "02E20DE772B5B29BD80F921B46AFD3F01A959A8D560E56D89385A7AF078C27EB",
-      "originalLength": 5405,
-      "originalSha256": "02E20DE772B5B29BD80F921B46AFD3F01A959A8D560E56D89385A7AF078C27EB"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveRpmFeedbackTests.cs",
-      "length": 11405,
-      "sha256": "22008E99B9ADB7CF8B5FB4412BD79397138015C87708AF85DA962D6B947D7D56",
-      "originalLength": 11405,
-      "originalSha256": "22008E99B9ADB7CF8B5FB4412BD79397138015C87708AF85DA962D6B947D7D56"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveRpmRateLimitTests.cs",
-      "length": 15486,
-      "sha256": "480C1988336CF38E207B297A1B371CB1AA15B88A0B860EDB7B7E2F3805988BD5",
-      "originalLength": 15486,
-      "originalSha256": "480C1988336CF38E207B297A1B371CB1AA15B88A0B860EDB7B7E2F3805988BD5"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveRpmTrackingTests.cs",
-      "length": 15215,
-      "sha256": "016CEC02A813AD9168B3BF6C8F0FA458760DEEEA1C18B5CD8F332480E18372B4",
-      "originalLength": 15215,
-      "originalSha256": "016CEC02A813AD9168B3BF6C8F0FA458760DEEEA1C18B5CD8F332480E18372B4"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveStatusTests.cs",
-      "length": 15130,
-      "sha256": "885D2A1A6AA9D18F1D99124204C8BBBCD0E495EF1D125950D9DF780507E2F237",
-      "originalLength": 15130,
-      "originalSha256": "885D2A1A6AA9D18F1D99124204C8BBBCD0E495EF1D125950D9DF780507E2F237"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveTemperatureTierTests.cs",
-      "length": 9844,
-      "sha256": "D48A4AB22E064E53507D62E21877694603A0BA9AC2545FD7EEA355FD58C8A202",
-      "originalLength": 9844,
-      "originalSha256": "D48A4AB22E064E53507D62E21877694603A0BA9AC2545FD7EEA355FD58C8A202"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveTests.cs",
-      "length": 2659,
-      "sha256": "D457CC38E6DB346A0D197A5133BAEA05B36613CB06476F1EA480ACC78E7F0197",
-      "originalLength": 2659,
-      "originalSha256": "D457CC38E6DB346A0D197A5133BAEA05B36613CB06476F1EA480ACC78E7F0197"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanCurveTrackingTelemetryTests.cs",
-      "length": 8262,
-      "sha256": "D3109571BC871ABBAD292D4AD416592F869D7A671AC248B69CD95AD237EA59D0",
-      "originalLength": 8262,
-      "originalSha256": "D3109571BC871ABBAD292D4AD416592F869D7A671AC248B69CD95AD237EA59D0"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanProfileApplicationTests.cs",
-      "length": 2927,
-      "sha256": "66DDF58E0428EF93B8B589EB3318B11A11D8C164A341543B55334C8D79650D1E",
-      "originalLength": 2927,
-      "originalSha256": "66DDF58E0428EF93B8B589EB3318B11A11D8C164A341543B55334C8D79650D1E"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanProfileSafetyFieldTests.cs",
-      "length": 10549,
-      "sha256": "A7189253A0DF706ED01F7883AD401625F4A05680780C1AD05BA3B9421D3D033F",
-      "originalLength": 10549,
-      "originalSha256": "A7189253A0DF706ED01F7883AD401625F4A05680780C1AD05BA3B9421D3D033F"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanProfileTests.cs",
-      "length": 3188,
-      "sha256": "0E8D1F5D09456DEBC9664CE9AAFCF6735F57D64B707DE6CD0E80C0CE2102CDEF",
-      "originalLength": 3188,
-      "originalSha256": "0E8D1F5D09456DEBC9664CE9AAFCF6735F57D64B707DE6CD0E80C0CE2102CDEF"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FanRpmFeedbackControllerTests.cs",
-      "length": 2520,
-      "sha256": "03881999DF339310F0C7BB1CC6995EEB61BB6A5A3377F25E894BF1C2D78DF2D5",
-      "originalLength": 2520,
-      "originalSha256": "03881999DF339310F0C7BB1CC6995EEB61BB6A5A3377F25E894BF1C2D78DF2D5"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FixedRpmBadSampleToleranceTests.cs",
-      "length": 8087,
-      "sha256": "069D92992925D757042026C88CD1B79D350D33AE8ADE45078BD72A3FB0CB1CE4",
-      "originalLength": 8087,
-      "originalSha256": "069D92992925D757042026C88CD1B79D350D33AE8ADE45078BD72A3FB0CB1CE4"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/FixedRpmControlSessionTests.cs",
-      "length": 12062,
-      "sha256": "564399F56E6F12986FF3DA49677DEF658C9AFAFEDAE62B3ABF3E186140B9A9DA",
-      "originalLength": 12062,
-      "originalSha256": "564399F56E6F12986FF3DA49677DEF658C9AFAFEDAE62B3ABF3E186140B9A9DA"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/GpuTelemetryTests.cs",
-      "length": 4948,
-      "sha256": "ADF8908AB6F9D7FEE4078DBC27A58DB2BB4D05135720052E9CFBE3CF5901AA6B",
-      "originalLength": 4948,
-      "originalSha256": "ADF8908AB6F9D7FEE4078DBC27A58DB2BB4D05135720052E9CFBE3CF5901AA6B"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/GuardianLeaseTests.cs",
-      "length": 14510,
-      "sha256": "F2AD48DF7C79FC1213BD3268A6F3B9018748D06A25A73A4B5D3DEADB5E1717F1",
-      "originalLength": 14510,
-      "originalSha256": "F2AD48DF7C79FC1213BD3268A6F3B9018748D06A25A73A4B5D3DEADB5E1717F1"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/HardwareCapabilitiesTests.cs",
-      "length": 2054,
-      "sha256": "0C5F843868D591A6CA3FC75F38EC4AC649D57EF94580E79D04639838B84AC869",
-      "originalLength": 2054,
-      "originalSha256": "0C5F843868D591A6CA3FC75F38EC4AC649D57EF94580E79D04639838B84AC869"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/HardwareSnapshotTests.cs",
-      "length": 1367,
-      "sha256": "FC6311DD574943C54593649D5CDAC29275EF50C0337E0C5D0BD09FFD76F708A1",
-      "originalLength": 1367,
-      "originalSha256": "FC6311DD574943C54593649D5CDAC29275EF50C0337E0C5D0BD09FFD76F708A1"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/HotkeySettingsTests.cs",
-      "length": 23951,
-      "sha256": "6E63AA43B5FB6A9560CC4910988FE485F2BBF6AC2E000C29B9DFC2C5F61F5924",
-      "originalLength": 23951,
-      "originalSha256": "6E63AA43B5FB6A9560CC4910988FE485F2BBF6AC2E000C29B9DFC2C5F61F5924"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/LhmCrossCheckTelemetryTests.cs",
-      "length": 3545,
-      "sha256": "B705CD6EAA7CF8C6A6C3D3EBA961FB827559131ED1F675905048163553462E68",
-      "originalLength": 3545,
-      "originalSha256": "B705CD6EAA7CF8C6A6C3D3EBA961FB827559131ED1F675905048163553462E68"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/LhmGpuSensorSelectionTests.cs",
-      "length": 6240,
-      "sha256": "94094008D855B3BCEE7B857ABE14AD29CE0DB06B13DA54550DCED4795DC2ABD8",
-      "originalLength": 6240,
-      "originalSha256": "94094008D855B3BCEE7B857ABE14AD29CE0DB06B13DA54550DCED4795DC2ABD8"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/LhmRetryPolicyTests.cs",
-      "length": 2774,
-      "sha256": "19EDD2D1896A52786C30263512C5DC30C8F5097BDE29BE95E8C254F488A1FF46",
-      "originalLength": 2774,
-      "originalSha256": "19EDD2D1896A52786C30263512C5DC30C8F5097BDE29BE95E8C254F488A1FF46"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/LhmSensorSelectionTests.cs",
-      "length": 11565,
-      "sha256": "0D9A55F55241E6E9B7D2F103F6BBAB64F53DFF68D42BF5A00C5629DBBD34646D",
-      "originalLength": 11565,
-      "originalSha256": "0D9A55F55241E6E9B7D2F103F6BBAB64F53DFF68D42BF5A00C5629DBBD34646D"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/MetricDisplayFormatTests.cs",
-      "length": 1694,
-      "sha256": "2A15F726FC9C88FCF5B0033CAE5347C841C9210974A3D955FA77E33E3E5A252A",
-      "originalLength": 1694,
-      "originalSha256": "2A15F726FC9C88FCF5B0033CAE5347C841C9210974A3D955FA77E33E3E5A252A"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/MiniProToolkit.Core.Tests.csproj",
-      "length": 639,
-      "sha256": "03E57EE4FAA95E69ABF6C0D3EFE26A806056BBB4E24D4A7EA496780F89B3AD24",
-      "originalLength": 639,
-      "originalSha256": "03E57EE4FAA95E69ABF6C0D3EFE26A806056BBB4E24D4A7EA496780F89B3AD24"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdAppearanceTests.cs",
-      "length": 18333,
-      "sha256": "E67D9A6831F3A5642682BFE0D749C753E9FB233C58B32ED33A47D76E93A83876",
-      "originalLength": 18333,
-      "originalSha256": "E67D9A6831F3A5642682BFE0D749C753E9FB233C58B32ED33A47D76E93A83876"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdEventTemplatesTests.cs",
-      "length": 11426,
-      "sha256": "4BB5EA3C4B8286DA8615BEAF2E8AB238F878EA2A23B91A38B8D4FF164AD6C6CE",
-      "originalLength": 11426,
-      "originalSha256": "4BB5EA3C4B8286DA8615BEAF2E8AB238F878EA2A23B91A38B8D4FF164AD6C6CE"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdMessageTests.cs",
-      "length": 6908,
-      "sha256": "513F7873A011055A4E020B6F91D46653DCB84594D13500B464C4CB240282E5FD",
-      "originalLength": 6908,
-      "originalSha256": "513F7873A011055A4E020B6F91D46653DCB84594D13500B464C4CB240282E5FD"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdNotificationsTests.cs",
-      "length": 7557,
-      "sha256": "0D03426E06AE232E5BC29E069A871C77833BCD026C18BA9DC13A4C62C50D5E63",
-      "originalLength": 7557,
-      "originalSha256": "0D03426E06AE232E5BC29E069A871C77833BCD026C18BA9DC13A4C62C50D5E63"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdPreferencesTests.cs",
-      "length": 15044,
-      "sha256": "CF20D8E72FEDAE5EA614C86F045105D3DAD289E017DA8A58176B2FDA062D5BBF",
-      "originalLength": 15044,
-      "originalSha256": "CF20D8E72FEDAE5EA614C86F045105D3DAD289E017DA8A58176B2FDA062D5BBF"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/OsdThemeTests.cs",
-      "length": 11176,
-      "sha256": "32FE6CC818847E4C5B1FEC210CDB4AB7E50890DE2ADD7D25751C421899E0D3C7",
-      "originalLength": 11176,
-      "originalSha256": "32FE6CC818847E4C5B1FEC210CDB4AB7E50890DE2ADD7D25751C421899E0D3C7"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/PowerModeWriteVerificationTests.cs",
-      "length": 8874,
-      "sha256": "343A59536972FF90BDD3361FACDCC93C3B2595DF36DD7D079C93D7592BD6FEC1",
-      "originalLength": 8874,
-      "originalSha256": "343A59536972FF90BDD3361FACDCC93C3B2595DF36DD7D079C93D7592BD6FEC1"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/PowerTransitionRecoveryTests.cs",
-      "length": 2602,
-      "sha256": "B2BBDFEC3FDD856634FB9620233B5AD54D544108DB1E6B0BBEA48C0BC7A2C66B",
-      "originalLength": 2602,
-      "originalSha256": "B2BBDFEC3FDD856634FB9620233B5AD54D544108DB1E6B0BBEA48C0BC7A2C66B"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ProfileAutomationHistoryTests.cs",
-      "length": 11249,
-      "sha256": "A832774C63AF096BEB14DFC89E2C2537D98170449EF5F8A8435CCDCD0E017615",
-      "originalLength": 11249,
-      "originalSha256": "A832774C63AF096BEB14DFC89E2C2537D98170449EF5F8A8435CCDCD0E017615"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ProfileAutomationProcessConditionTests.cs",
-      "length": 17322,
-      "sha256": "62A3E610C4BE70AEE39EF86613795EF870C75D53E41A083B85421E0D15A3585E",
-      "originalLength": 17322,
-      "originalSha256": "62A3E610C4BE70AEE39EF86613795EF870C75D53E41A083B85421E0D15A3585E"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ProfileAutomationStatusTests.cs",
-      "length": 18335,
-      "sha256": "8D1BCDAC83A6F9D1284644EA19F4A0CBA243BD4E7B01E1D6D19C16625CFAFCCE",
-      "originalLength": 18335,
-      "originalSha256": "8D1BCDAC83A6F9D1284644EA19F4A0CBA243BD4E7B01E1D6D19C16625CFAFCCE"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ProfileAutomationStoreCompatibilityTests.cs",
-      "length": 9726,
-      "sha256": "FFBE2EA4CBF95EFBBA8833E2BDD9ACDDCBCCFB52C07BB09B17016D6C9413D35B",
-      "originalLength": 9726,
-      "originalSha256": "FFBE2EA4CBF95EFBBA8833E2BDD9ACDDCBCCFB52C07BB09B17016D6C9413D35B"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ProfileAutomationTests.cs",
-      "length": 8361,
-      "sha256": "409FAB9AB59F67FA7BE116BAE43B4D60292A1FBA13C73AA46320FF7FF09EB14A",
-      "originalLength": 8361,
-      "originalSha256": "409FAB9AB59F67FA7BE116BAE43B4D60292A1FBA13C73AA46320FF7FF09EB14A"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ShutdownSequenceTests.cs",
-      "length": 3459,
-      "sha256": "0E935F77230AD154AA906561E845BFA14BECFE565862859C9059C837C09C908C",
-      "originalLength": 3459,
-      "originalSha256": "0E935F77230AD154AA906561E845BFA14BECFE565862859C9059C837C09C908C"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ShutdownSignalExitTests.cs",
-      "length": 5009,
-      "sha256": "0E7C3D917338E544BAD593F06BD00631DB144B2142BC3BDF05BE5C315E0FB692",
-      "originalLength": 5009,
-      "originalSha256": "0E7C3D917338E544BAD593F06BD00631DB144B2142BC3BDF05BE5C315E0FB692"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/SingleFlightOperationWorkerTests.cs",
-      "length": 10482,
-      "sha256": "9127E2A83CD5800AA2B32A22DF69B2F85480B941CEC4AD12046DEC256AD5EBEB",
-      "originalLength": 10482,
-      "originalSha256": "9127E2A83CD5800AA2B32A22DF69B2F85480B941CEC4AD12046DEC256AD5EBEB"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/SystemIndicatorsTests.cs",
-      "length": 10683,
-      "sha256": "7EDDE8E75198F3E1680426BD8A493AAE205DC38F02DFA78F19796105AE2469AD",
-      "originalLength": 10683,
-      "originalSha256": "7EDDE8E75198F3E1680426BD8A493AAE205DC38F02DFA78F19796105AE2469AD"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TaskbarClickGestureTests.cs",
-      "length": 1773,
-      "sha256": "CEBE00FDC4CF32E95F036A91116C13F5BE50F9937525886F9ACB4E2F6CF06C48",
-      "originalLength": 1773,
-      "originalSha256": "CEBE00FDC4CF32E95F036A91116C13F5BE50F9937525886F9ACB4E2F6CF06C48"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TaskbarDisplaySettingsTests.cs",
-      "length": 11740,
-      "sha256": "E2164882116A30554C5BF60DFD3293F8030002AA8469E534952071C8B5413E06",
-      "originalLength": 11740,
-      "originalSha256": "E2164882116A30554C5BF60DFD3293F8030002AA8469E534952071C8B5413E06"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TaskbarOverlayLayoutTests.cs",
-      "length": 7657,
-      "sha256": "E65EC3A23902604A889F3A29BAC651B2AEC11D0130261CEDEA528AF382DFD11C",
-      "originalLength": 7657,
-      "originalSha256": "E65EC3A23902604A889F3A29BAC651B2AEC11D0130261CEDEA528AF382DFD11C"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TaskbarRefreshPolicyTests.cs",
-      "length": 5049,
-      "sha256": "F0564A345DD843F35969149B2F846618758337BE57EDE9734BD22A3CCF3F2CB2",
-      "originalLength": 5049,
-      "originalSha256": "F0564A345DD843F35969149B2F846618758337BE57EDE9734BD22A3CCF3F2CB2"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TelemetryHistoryTests.cs",
-      "length": 9470,
-      "sha256": "C4967663380599C29D0532518935C5AB837A3E5EA5D455B31E4C630C30EAE816",
-      "originalLength": 9470,
-      "originalSha256": "C4967663380599C29D0532518935C5AB837A3E5EA5D455B31E4C630C30EAE816"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TelemetryRetentionAndIndexTests.cs",
-      "length": 20423,
-      "sha256": "27C1BA160FD9C94B957B92FCAD9AE76BE8162DAA36D091F1DBE77806BE6F4A7A",
-      "originalLength": 20423,
-      "originalSha256": "27C1BA160FD9C94B957B92FCAD9AE76BE8162DAA36D091F1DBE77806BE6F4A7A"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/TelemetryTests.cs",
-      "length": 5873,
-      "sha256": "DAD8781FD45E1597A0ABF829B67F8B55AD5F5D5EEC994356104194D6247B92C2",
-      "originalLength": 5873,
-      "originalSha256": "DAD8781FD45E1597A0ABF829B67F8B55AD5F5D5EEC994356104194D6247B92C2"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ToolkitCommandIpcTests.cs",
-      "length": 18917,
-      "sha256": "F35F6D9B6DE4AEE042FF75940FAF493E27D2F9FC7C1A3FEC463E4834EF9D3D87",
-      "originalLength": 18917,
-      "originalSha256": "F35F6D9B6DE4AEE042FF75940FAF493E27D2F9FC7C1A3FEC463E4834EF9D3D87"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ToolkitCommandLineTests.cs",
-      "length": 11734,
-      "sha256": "D73EF5B5DC632F14AE27C2A0B05C2B352753F73E1EF8907FEFC6110FD8CEA710",
-      "originalLength": 11734,
-      "originalSha256": "D73EF5B5DC632F14AE27C2A0B05C2B352753F73E1EF8907FEFC6110FD8CEA710"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ToolkitCommandOutcomeTests.cs",
-      "length": 6516,
-      "sha256": "25B8C3B6835E7B9DA8DAB2ECA80C86316619423B86EB2D6704478E8594B01BD1",
-      "originalLength": 6516,
-      "originalSha256": "25B8C3B6835E7B9DA8DAB2ECA80C86316619423B86EB2D6704478E8594B01BD1"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ToolkitCommandRequestCacheTests.cs",
-      "length": 11563,
-      "sha256": "087DA02E64C8BF59DBDC8B8124C977D4105C24FDF4F5291973CE8B056FBBA946",
-      "originalLength": 11563,
-      "originalSha256": "087DA02E64C8BF59DBDC8B8124C977D4105C24FDF4F5291973CE8B056FBBA946"
-    },
-    {
-      "path": "tests/MiniProToolkit.Core.Tests/ToolkitCommandSingleInstanceTests.cs",
-      "length": 14445,
-      "sha256": "3E43DB6CF9135269FC2FF0F14998C2007D25170AD57BE7D8A1D39BD637C70C62",
-      "originalLength": 14445,
-      "originalSha256": "3E43DB6CF9135269FC2FF0F14998C2007D25170AD57BE7D8A1D39BD637C70C62"
-    }
-  ]
+﻿{
+    "Product": "MiniProToolkit",
+    "Artifact": "source",
+    "Version": "0.1.0",
+    "Runtime": "win-x64",
+    "GeneratedUtc": "2026-11-02T11:42:49.867Z",
+    "ExcludedFromArchive": [
+        ".git/",
+        ".pi/ (local agent state)",
+        "temp/ (packaging scratch and backups)",
+        "research/ (original vendor installers, reverse-engineering notes and evidence)",
+        "dist/ (release artifacts)",
+        "bin/, obj/, artifacts/, TestResults/ (build output)",
+        "docs/gap-list.md, docs/console-product-plan.md, docs/LICENSE-DECISION-REQUIRED.md (repository-internal planning)",
+        "docs/ui-concepts/, docs/taskbar-layout-concepts/ (design mockups)",
+        "scripts/probes/ (local hardware probe helpers writing to a private evidence tree)",
+        "scripts/env-check.ps1, scripts/test-release-gates.ps1, scripts/validate-curve-load.ps1, scripts/validate-curve-smoke.ps1, scripts/validate-guardian-recovery.ps1 (maintainer harnesses bound to a private evidence tree)",
+        "user configuration, logs and local backups"
+    ],
+    "Files": [
+        {
+            "RelativePath": ".gitignore",
+            "Length": 429,
+            "Sha256": "45533BDC14E8FF2AD35795895BE31D10534C85C36CAAF4BBF57E9E40086B9CD3"
+        },
+        {
+            "RelativePath": "Directory.Build.props",
+            "Length": 1758,
+            "Sha256": "D3263D0A2395F838DD1CC942CFD473BF09F589C7F1D476EFF0B395F4E91251E0"
+        },
+        {
+            "RelativePath": "LICENSE",
+            "Length": 1065,
+            "Sha256": "D29EBF752311F4D0E2CFCF1BEB29354862D2D62671C63AAEDA94D73579CBD224"
+        },
+        {
+            "RelativePath": "MiniProToolkit.sln",
+            "Length": 2994,
+            "Sha256": "F1044DAF8E12707A214E05F1A8A6AEE7A630D86162CC3BA919F0059AE691C93A"
+        },
+        {
+            "RelativePath": "README.md",
+            "Length": 26994,
+            "Sha256": "8B6B3B0EB053CDAA2025F1387B67966900C6FADB2C3D152C36C895D9BBB796FB"
+        },
+        {
+            "RelativePath": "SOURCE-ARCHIVE-NOTICE.md",
+            "Length": 1418,
+            "Sha256": "BE2F4EBCC930E32DED93350E159C689165853275812BCFB740E9B9E1915E0939"
+        },
+        {
+            "RelativePath": "THIRD-PARTY-NOTICES.md",
+            "Length": 5664,
+            "Sha256": "7CD9DE485471786E4BB6C1B62976A5A1363BF98D83E225A0BC889DCAB493FF74"
+        },
+        {
+            "RelativePath": "docs/architecture.md",
+            "Length": 73491,
+            "Sha256": "778CD7AAC555E7350AED426197D714D75972BCD86F490C1D7969977CC42D8C0A"
+        },
+        {
+            "RelativePath": "docs/fan-calibration.md",
+            "Length": 5890,
+            "Sha256": "E2284E6E750992407827DB69684F6DDFF590C4B43A75E61EAC6C1C1574F6FD2C"
+        },
+        {
+            "RelativePath": "docs/fan-control-hardening.md",
+            "Length": 17422,
+            "Sha256": "32ECF9DEFC7189DCCF40DC88F4316D7D92D918E8E32E4E03A6920856337679A4"
+        },
+        {
+            "RelativePath": "docs/history-and-diagnostics.md",
+            "Length": 30016,
+            "Sha256": "2AD1C81924C7FD832D34E97C3954849E962AEA0C69B7C8CFFDBDB51C528C3739"
+        },
+        {
+            "RelativePath": "docs/license.md",
+            "Length": 2654,
+            "Sha256": "9456B0D6817B8F0B4B8A5AB81ACFD415193014541B6A180B4B339E7FBB9B3DE3"
+        },
+        {
+            "RelativePath": "docs/performance-review.md",
+            "Length": 16760,
+            "Sha256": "B132B0624F658C113991F792568E4AFA4D8D590EB3D4DBDEB81B52D353D5E46E"
+        },
+        {
+            "RelativePath": "docs/phase-3-validation.md",
+            "Length": 1991,
+            "Sha256": "BF6B9C576D846502D0C050B9F745F10E1A49211B2FD28A067FE40CC5AF6F76A1"
+        },
+        {
+            "RelativePath": "docs/phase-4-validation.md",
+            "Length": 1939,
+            "Sha256": "2C59F8761F8465AB918341AE26E68E2555237DD5A7D40F1B5EC7A7728BC1324E"
+        },
+        {
+            "RelativePath": "docs/phase-5-validation.md",
+            "Length": 15692,
+            "Sha256": "AA07179C67E75B50A6342888ED6AD58282F3CC36A0EF64F40A92190A5CA6937F"
+        },
+        {
+            "RelativePath": "docs/product-roadmap.md",
+            "Length": 19263,
+            "Sha256": "D9F83098F02F97667E63A0711F8596F68C8C82BEC1DF93767EABE2DDFAE99A78"
+        },
+        {
+            "RelativePath": "docs/profile-automation-and-installer.md",
+            "Length": 6211,
+            "Sha256": "86B1C59014A13DC76BE0BDD042B364C0D35FE06BB3B88B1538CE80F33D9555EE"
+        },
+        {
+            "RelativePath": "docs/release-packaging.md",
+            "Length": 29392,
+            "Sha256": "CC0D282FAA8894F96CD264964C9F925A0C0001E353EBDE72A9BABA8EFE609712"
+        },
+        {
+            "RelativePath": "installer/MiniProToolkit.iss",
+            "Length": 4822,
+            "Sha256": "9BA88C6DC5E81253F8776356B658FD08BD479FE29ED403699397C6DF84ABCC57"
+        },
+        {
+            "RelativePath": "scripts/build-installer.ps1",
+            "Length": 9757,
+            "Sha256": "D9E76AB3D19BDC3404B26A125E52ED18A36AC828CBA878C2029038AC3F5348CF"
+        },
+        {
+            "RelativePath": "scripts/check-ps-syntax.ps1",
+            "Length": 7129,
+            "Sha256": "56D6E8D13D8DF368FAABC3208CB5A71978EB94A25074E17AB643AF32659CF49D"
+        },
+        {
+            "RelativePath": "scripts/guardian-status.ps1",
+            "Length": 1234,
+            "Sha256": "297A0F2A3DC8A56A37C65C9AEAF6C9F36CC30BC29219E5E5257E28D0E3F43EB5"
+        },
+        {
+            "RelativePath": "scripts/install-guardian.ps1",
+            "Length": 948,
+            "Sha256": "5BBCF60B0ECDCBF27EB5A5735C64F78E951F6ECF0D6A204F16259908EDD12384"
+        },
+        {
+            "RelativePath": "scripts/install-package.ps1",
+            "Length": 3142,
+            "Sha256": "7AC4546A79DDA18852BDB1CBD00A03AF24FC2FDA66A5042B707F88BD3D061F9F"
+        },
+        {
+            "RelativePath": "scripts/package-archive.ps1",
+            "Length": 7672,
+            "Sha256": "D07196E57F0F310863034FA28EB642D2F1E3FF941FD25A11B307F0BFBF4034B7"
+        },
+        {
+            "RelativePath": "scripts/package-common.ps1",
+            "Length": 29137,
+            "Sha256": "13EFED2FFA94D6B178F9AE9DB9F4F09B31FDEFED5803A3BFDDDB24A309873222"
+        },
+        {
+            "RelativePath": "scripts/publish-release.ps1",
+            "Length": 46860,
+            "Sha256": "3D2EFA8641F9CB3B35584237D4B4E70F3AF711BF9036002FCCCFFAFF42F38465"
+        },
+        {
+            "RelativePath": "scripts/repair-package.ps1",
+            "Length": 3323,
+            "Sha256": "CD6909F18C2063695B428691D18D2FC4F0646FC8A58810EDF9E36E4EDBA21810"
+        },
+        {
+            "RelativePath": "scripts/restore-ec-automatic.ps1",
+            "Length": 2403,
+            "Sha256": "11F37806E2BC96095724AAFFB991AA59CE6A82A8BA56810A69A1FCE08AEAE47E"
+        },
+        {
+            "RelativePath": "scripts/run-guardian-validation-elevated.ps1",
+            "Length": 350,
+            "Sha256": "0948A3E74129033BDD27075980EBE661947AA57F8F4FAA0B291A37074E621670"
+        },
+        {
+            "RelativePath": "scripts/test-release-gates.ps1",
+            "Length": 15388,
+            "Sha256": "614B07A89DC025743C15920847E60B7CCBB3DE1DAB3EC8DA552C8A1061847364"
+        },
+        {
+            "RelativePath": "scripts/uninstall-guardian.ps1",
+            "Length": 1350,
+            "Sha256": "B7C0A3AF798BBE979398D0D8B1568194B780E68C0F90C3867246CC04F8973E57"
+        },
+        {
+            "RelativePath": "scripts/uninstall-package.ps1",
+            "Length": 2122,
+            "Sha256": "803AA26D503BAFAE7E6DE7D0C33E55FA00E0A7DC82B4CC879B8B1B527B87850F"
+        },
+        {
+            "RelativePath": "scripts/upgrade-package.ps1",
+            "Length": 3178,
+            "Sha256": "C43A74ED33DA085DEB972BD92FED66160AF7F584C1C76C75295F8E686DF3BE6A"
+        },
+        {
+            "RelativePath": "scripts/validate-package.ps1",
+            "Length": 1218,
+            "Sha256": "99E8F0D5DFB0138A6720B668E82998D5EAB89DE0E7A76F54197BE064FF7FB604"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/App.xaml",
+            "Length": 471,
+            "Sha256": "079BE7EBA7E9EBEF89E66A3A2ACB07B8F81C3645DC43916680D3E5ECF644F9EA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/App.xaml.cs",
+            "Length": 14216,
+            "Sha256": "8DA2B8E6346CCB9A9B69A2040C33C282885293D24A41277419D715316B894C51"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/AppCommandPipeClient.cs",
+            "Length": 8080,
+            "Sha256": "AF319829B328E01E5EB874C6413601F097C4BBE4A20013645A26AFBDFAFE245A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/AppCommandPipeServer.cs",
+            "Length": 15073,
+            "Sha256": "150E6597C65EB630D0D3113C47F792BFC2E6B10C07017E7DC4546F3B9C10238F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/AppLog.cs",
+            "Length": 1309,
+            "Sha256": "F9CEFA12E53698B5D1429949101FC967F9C79B474ACEF6FDB1CBAC4D4DA97673"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/DiagnosticsWindow.xaml",
+            "Length": 11668,
+            "Sha256": "FA250DA458E79BE62F2CFEFD33B715C392FF592D78D7872836CDA0226C838758"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/DiagnosticsWindow.xaml.cs",
+            "Length": 17586,
+            "Sha256": "41D9C7BFEA6E7F33E7E917E86A305E564B2AE85811213F1C8465B89AFEB2C9F9"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/DisplaySourceSettingsWindow.xaml",
+            "Length": 3436,
+            "Sha256": "D68ED18723D90E9D5029D3767A061A4EA03C9EFC614B205E8A64B37C4FCB4D40"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/DisplaySourceSettingsWindow.xaml.cs",
+            "Length": 2336,
+            "Sha256": "EFAB5663200080045FB24C72C1E222E5B73BE49E843600862DA8FA4F74129EDA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanCalibrationEditorWindow.xaml",
+            "Length": 4927,
+            "Sha256": "2D378AA3242DC7821A5A1C0A9033E681130AC98DC9DE5C171A0BDF4A79AF2CF6"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanCalibrationEditorWindow.xaml.cs",
+            "Length": 11640,
+            "Sha256": "EBC7DEBDA3BD056C512A61C99DEBDE85A6C7EE8DFD978E1DC6C8D8E6F9ECAC6A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanCurveEditorWindow.xaml",
+            "Length": 12029,
+            "Sha256": "C98438E8461263C458C241433ED233AE17CAEDCF2E269B7AE2974544AC772790"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanCurveEditorWindow.xaml.cs",
+            "Length": 33694,
+            "Sha256": "83BB3C60BA7B4A1C4CD7B3E894D0C3E508CF748D735A47CD91DE93F2387DFFF1"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanProfileManagerWindow.xaml",
+            "Length": 4060,
+            "Sha256": "65957B4185F42F8A3129861F5CBFE1FE9EB62EC0AD185A5BB2B1BE2B5E2593C1"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FanProfileManagerWindow.xaml.cs",
+            "Length": 8094,
+            "Sha256": "665339ECDF5FFFED5FC768CDCB031CEFDE6F9142F2C48A07E97905F817A1405B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FloatingStatusSettingsWindow.xaml",
+            "Length": 31822,
+            "Sha256": "6BDC9E4BFEE5092E0262F7A8C9FA4763F851DEB9AE8E88F4B42698B4B529556B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FloatingStatusSettingsWindow.xaml.cs",
+            "Length": 32824,
+            "Sha256": "B29CE89BCFDCF63D7E48E6142A3AF6B0137081C914E8F60A1014421EA7128B2F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FloatingStatusWindow.xaml",
+            "Length": 4767,
+            "Sha256": "FEE22B98FD8FB7F3AD02B7C22CFA1C29FAC5C72390D14911C176B6C2F7BDB874"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/FloatingStatusWindow.xaml.cs",
+            "Length": 51560,
+            "Sha256": "0A7F1AF9A3BBDCCCCF3051FB04F16E77610E6A3F0A3D9B2F80753C0A69786CCA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/GuardianAvailability.cs",
+            "Length": 478,
+            "Sha256": "C3440EECBF64BF5F59CDE23D2B97152BB651BF7C21A0FD9D90996906F54646C5"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/GuardianLeasedFanTarget.cs",
+            "Length": 3018,
+            "Sha256": "A15A13FA9585A3166A4929A97B4649FD2206AEF9F64EA4FA795EF98872E5F697"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/GuardianProcessIdentity.cs",
+            "Length": 318,
+            "Sha256": "4FA20D4E65EBE98BEEEFB83B0541CE1E1E4B852C1D962A4EB97715A6094F9B18"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/HistoryWindow.xaml",
+            "Length": 10901,
+            "Sha256": "2B1447C70724FB92635F70BC95933FD7DFB87EC547B0CA71F49C5CEEF9561CE7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/HistoryWindow.xaml.cs",
+            "Length": 22919,
+            "Sha256": "FA443FAC718990F272BE492A637BD9E89F071BB0BA575C60FF3374454780300B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/MainWindow.Presentation.cs",
+            "Length": 13844,
+            "Sha256": "D5943E916E77EB889E212707C50D4C936246EE0670CCA965D90B4FC3CA8CD689"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/MainWindow.xaml",
+            "Length": 44547,
+            "Sha256": "8BEB4F7EEB40DE10A2A29A00AE795B2F22AC2F6F8654B595638653C387CA014B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/MainWindow.xaml.cs",
+            "Length": 233519,
+            "Sha256": "929292C8C69DAE6A64F4B97A83705417B65A298BAF8FFB061B6E0454540F8A0F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/MiniProToolkit.App.csproj",
+            "Length": 1931,
+            "Sha256": "BEF046789B164CAA5E3D44B359BD855070A26D3AF753F9E37C14D88F7D577FCA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/NativeMethods.cs",
+            "Length": 11524,
+            "Sha256": "20D3DD14CF0C27410321FA2E81DEF69B766DCAD610506CFCA892AE2AE60369D0"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/ObsidianTheme.cs",
+            "Length": 2391,
+            "Sha256": "9C31C398AA8432BDA5CE435235B112F49E224A5B65B38943D72FC548459F439C"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/ObsidianWindowChrome.cs",
+            "Length": 6287,
+            "Sha256": "E79C14BF2D3C3EAB37BFECFB7FC8568E5DC19CFF0663D45D7635013FA178876B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/OsdSettingsWindow.xaml",
+            "Length": 12181,
+            "Sha256": "14D9E9BD5DD88D70AE046DF2D95854095217DD5C207D169350792AEE84A6177C"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/OsdSettingsWindow.xaml.cs",
+            "Length": 16590,
+            "Sha256": "528A7322868608ADC3C4EABC08B761F69F7123394E4664879EA8A3615C3E8563"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/OsdWindow.xaml",
+            "Length": 3395,
+            "Sha256": "E70CEC8392E31462DC3F4357E9A0BBF461F6B778681DEAC2DD877FF189A6ECFA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/OsdWindow.xaml.cs",
+            "Length": 13906,
+            "Sha256": "0A92ECA9E9D431DEBBC3DE2F2EE9637923FD1456003052FFF6F79B188C3A34CF"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/ProfileAutomationProcessSampler.cs",
+            "Length": 6332,
+            "Sha256": "E7C7C9B3A4D4B047BF7AA41B8677C468B6E0F7217DE89CA8C0525EE1607EF7C5"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/ProfileAutomationWindow.xaml",
+            "Length": 9127,
+            "Sha256": "1049B8E4871527C7F355F00409290DB60A6659A3E2EC983A23037D151D7BAECA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/ProfileAutomationWindow.xaml.cs",
+            "Length": 14095,
+            "Sha256": "6EA51BD80EA9C82DFAFC1F11F7D304C744FB84CC0F7DD4C65257DCEA96F1E4B0"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/StartupRegistration.cs",
+            "Length": 1204,
+            "Sha256": "1F91AC79A0CB0DEA0E31981B3ABCA28FD6E34223DD4532762F4B8F556AFE474F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/TaskbarSettingsWindow.xaml",
+            "Length": 32612,
+            "Sha256": "02AD6708F45D956D3B2592388A34B869536382310B5CA27D77893E32BEF7DA78"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/TaskbarSettingsWindow.xaml.cs",
+            "Length": 38639,
+            "Sha256": "4E63790458BDC278D2D177DD54EEE9A489265822118F73738B0ACC915C9E4503"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/TaskbarStatusWindow.xaml",
+            "Length": 2801,
+            "Sha256": "AA8FC7FC1F2ECAB7E48A37F5C7A62B2969AFD0A053ACE92DA4F322884E06618B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/TaskbarStatusWindow.xaml.cs",
+            "Length": 52200,
+            "Sha256": "E0549B458A74665849D7968F3BB9A8AC00E357D7DBB8BFA5694D70E853206D12"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/Themes/Obsidian.Controls.xaml",
+            "Length": 31224,
+            "Sha256": "6521E7F1EDB3503B5C4AF714E4016206EBEF7AC3804E59E9EB547D999800DA82"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/Themes/Obsidian.xaml",
+            "Length": 44664,
+            "Sha256": "1EF27FFC2F8DB2C9AD4CB32150341278CEE215416585BB147E4DB3BB6C13BAF7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.App/app.manifest",
+            "Length": 1165,
+            "Sha256": "BC43C2E8BFEB2667CFFA75B6AD23170A5942DF1216931AD201F0936E6F9DE4A2"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/AuxTemperatureSelection.cs",
+            "Length": 5168,
+            "Sha256": "20E46F2A3911F780887953CCE586421D5F54D5DC3BCDBB285CD0BB4055A0BF64"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/BoundedTextLog.cs",
+            "Length": 5313,
+            "Sha256": "6471D9E7E3B788FDB67BD39F3EE4636DF6583CDEDA6E5E0F3507174C7514DCCE"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/BoundedTreeWalk.cs",
+            "Length": 7185,
+            "Sha256": "FBD244CB65E144A837D7FDC1D6C3E21F717454E7BD59CCD58292CC136702D663"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/BrightnessPanelSelection.cs",
+            "Length": 2927,
+            "Sha256": "DAEF46E1A96E7ABAD3E692CFF75A4BE3A1A7999A923BAC337DDF2DBF45FDE8B2"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/CpuClassFrequency.cs",
+            "Length": 8374,
+            "Sha256": "FD167C8B788FB57C48B0F1BD4C132DC7409E85AE679575B0A73CD64C2BA58724"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/CpuDisplaySourceSettings.cs",
+            "Length": 10579,
+            "Sha256": "451DADDAC62457FD707AFFBAAD327984FFAFAA0501E8E425C9EF0DC326EE5EE7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/CpuFrequency.cs",
+            "Length": 7737,
+            "Sha256": "F6C6BB901DE663CD9EFF9491094BB50C9E736CF383154A7642E8DE8CFA9856D2"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/DiagnosticEventStore.cs",
+            "Length": 9818,
+            "Sha256": "997829995C806B3C73E6F25C5C375B72511A3B6D63C062BB17E2B58FB9DF76B5"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/DiagnosticRedactor.cs",
+            "Length": 620,
+            "Sha256": "87DCDE893B7E8D925772441D0C20B04A48858C6F80B2227BCE860C51B932F769"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ExitRequestGate.cs",
+            "Length": 5844,
+            "Sha256": "C087190A4A57C8D30A7DC5BC289416C13D7EE5E00366465B4FBC0685007D5EC2"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCalibration.cs",
+            "Length": 4724,
+            "Sha256": "2F8E62BCB3919487D8F76196AADB5AC960F3A31C6E176FB9B8A3C498B2693D1E"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCalibrationSampling.cs",
+            "Length": 6542,
+            "Sha256": "BB6326AB6DB970C7B8B509167A38DD7382764D0E6D8D52361FDD74D3AB0F9892"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCalibrationStore.cs",
+            "Length": 3217,
+            "Sha256": "37BFCF53FB6984734F293C66B8FAD286FE1A3B0E5E0C8BBEB37E6533D03CAEC8"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurve.cs",
+            "Length": 30461,
+            "Sha256": "5FD7D30885CD0A98FD31EB48BC99CB47A21FC58D85D0DFA87AE888C4E6D775FF"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveCalibrationCompatibility.cs",
+            "Length": 1564,
+            "Sha256": "81349E6322074B12914B7BE01D2B307455AFD71FDEE96B0C1BDAEB098A0D4488"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveConfigurationStore.cs",
+            "Length": 4460,
+            "Sha256": "4B1354E363F079826D0FE04C684840732A19B9AD317E587F9882AE0A9DB9BE3D"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveController.cs",
+            "Length": 3635,
+            "Sha256": "2750666321F26A593E52DC80756B88DDB53143037EA7A9E73A16E65C5603D2BA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveLeaseGate.cs",
+            "Length": 3905,
+            "Sha256": "AE840B4EAD090F17F1D52A29F58B793C3BA67D1DFE1222180A490662FBE92DEF"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveRpmFeedback.cs",
+            "Length": 10107,
+            "Sha256": "FD95D6FD8DDD277013C80C9824580586FE171C571D780FDF43D6A0D0C3B8CBD3"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveRpmTracking.cs",
+            "Length": 5502,
+            "Sha256": "2E542E79651DC5F1544B3C70ECE6448DD1244DEB9EA84A33A1FEB5E170220DF9"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanCurveStatus.cs",
+            "Length": 10948,
+            "Sha256": "F0F60B38A10D3E69838361FFDCBA29C16A51A0EE807681F597A24B04E99BC936"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanProfile.cs",
+            "Length": 1823,
+            "Sha256": "1C6D141AD276ACDAC0E75FF1CA3CD56835E2378A0E0F0F693F02B5474DDC8301"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanProfileApplication.cs",
+            "Length": 2319,
+            "Sha256": "55356E5769D1D30B27DC75873DE23424A29BC58884C1EA169DE8481CCC5254D3"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanProfileStore.cs",
+            "Length": 6743,
+            "Sha256": "3326DA5A5EAB701E2A7CF429E0F56916DE03921C967D17BA8257A48B514ABF86"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FanRpmFeedbackController.cs",
+            "Length": 6653,
+            "Sha256": "1515726726AFD6454ABB8578C88855C5534531648167754A5079D367E69A381C"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FixedRpmControlSession.cs",
+            "Length": 14127,
+            "Sha256": "FD9D6330CE545C6DFBF36BF76C2192039A7586E0A372B02C06B7476075ED6DD7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FloatingStatusInteraction.cs",
+            "Length": 4840,
+            "Sha256": "84DC745C2AB418BAF13536A226C21FCA65075555D44DB81E5D72B185EB5CFA43"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FloatingStatusLayout.cs",
+            "Length": 14257,
+            "Sha256": "A7182D6B0B649D3869091AE67F72A7444C8A42DE962B606A0965510B0B1658AC"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/FloatingStatusSettings.cs",
+            "Length": 20693,
+            "Sha256": "9ABA0F141DA5315B33DEA5E4439CBA39C7D60D3F64679BEE390764A94530B19A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/GuardianCurveWriteLeasePolicy.cs",
+            "Length": 1909,
+            "Sha256": "B5740E54B59F64A8BB560D290552E94996728C5857B47A1CEEBD2A652B83C398"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/GuardianLease.cs",
+            "Length": 23399,
+            "Sha256": "27B29ABE8B41424D19ADFAD080930FF6FABBA33B63B72437BA7ACCDA79EE5B0E"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/HardwareCapabilities.cs",
+            "Length": 858,
+            "Sha256": "8574CCAE00A03DAB43D56307C6C7C1F82FE519FD154249FFE101EF407AC1D75E"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/HardwareSnapshot.cs",
+            "Length": 5108,
+            "Sha256": "7DC45E93A8E3A05B3E36A5B4FBB846CCC4982B5A5C7901EF2F1016043B438BE7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/HistoryChartScale.cs",
+            "Length": 2770,
+            "Sha256": "AB729413FAEBDA6EAA3F2C01C55B22755CECE3496BC286ED9A8E968B4D46E4E5"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/HotkeyRebind.cs",
+            "Length": 11038,
+            "Sha256": "FBB4B60B837C51895C2A077EB2C5085395B7008753FA1FAABE28B214E1A68691"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/HotkeySettings.cs",
+            "Length": 25826,
+            "Sha256": "A432C39849E96C3F64A3B50301DF706849631541B3B390FFCDBE0D7A7230C7E8"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/LibreHardwareMonitorAuxSensorSelection.cs",
+            "Length": 6416,
+            "Sha256": "473B3B1D942C894277E0A92302F15E658F1F6EBA052FD7D16AE71CF4087CBD4A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/LibreHardwareMonitorSensorSelection.cs",
+            "Length": 8931,
+            "Sha256": "42ED534A22F29C00281475EA5953F69BCDC80D57C33967665945D8C99EB01A48"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/MiniProToolkit.Core.csproj",
+            "Length": 491,
+            "Sha256": "9CD7389601F50FB34D582FA84B4723D6867CCADC40C3E2B00812D5F8F211F179"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdAppearance.cs",
+            "Length": 18049,
+            "Sha256": "6DDEFC2ACA1DFAAD5CB99647D17D89E9B96484196125778E6B2792572B5CE749"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdEventTemplates.cs",
+            "Length": 7570,
+            "Sha256": "7F7FE5FF4EDF19886E97180AC46542844AC7E4C030A496D7923694CBD84F1DFB"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdMessage.cs",
+            "Length": 9667,
+            "Sha256": "BC130E57D59F43AA1ED349AFA8D8301FC4ACBAEACF330049B7CE0882DCBDE6B2"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdNotifications.cs",
+            "Length": 9232,
+            "Sha256": "993C60FC39E3786612EBC2CFEC3227AB503E1951F20A245CD4F93D61FCA38D06"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdPreferences.cs",
+            "Length": 8308,
+            "Sha256": "0512D0C61CFC74FB9238677595DDB6BD911D3A9D0BCA10F593F8B38078CFF7D1"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/OsdTheme.cs",
+            "Length": 10251,
+            "Sha256": "6E820D1D7F32DA1BECA66BD78AC770105A3400F4D2B6EC14088B5EA87A80FD7D"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/PowerModeWriteVerification.cs",
+            "Length": 5131,
+            "Sha256": "EDC2C7ECC8990C543AA07CA2F4103D65025C840D6D1DE931086B19C38B554171"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/PowerTransitionRecovery.cs",
+            "Length": 2825,
+            "Sha256": "4E548CD7CAA8CDB9B5723ED99AC4F2B4AA8307D80DB6951788A37AA8DBCE75FF"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ProfileAutomation.cs",
+            "Length": 37788,
+            "Sha256": "7E268D4764665554DA4510A2365CFA50E27E653E6498A76501AD61DBC1397EFB"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ProfileAutomationHistory.cs",
+            "Length": 10384,
+            "Sha256": "3E5F1C2793529DC6EDB640CDDFA84E40C36A67226E3C16F2718037375D89D530"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ProfileAutomationStatus.cs",
+            "Length": 12770,
+            "Sha256": "7479F50A021182C6A483B71FEC59D1FA9EE9ED2030969BC98A1436FD72FEED05"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ShutdownRecovery.cs",
+            "Length": 3490,
+            "Sha256": "E519AB73AABE514E4E31A8495B4D2E2ECB7CCFDF0976C06385E18E448FA62CE7"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/SingleFlightOperationWorker.cs",
+            "Length": 5538,
+            "Sha256": "B6CCF63BECF65609F8885429DAEB86D5D798D91B0D0075C1C9B9C990A71C11EA"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/SystemIndicators.cs",
+            "Length": 13910,
+            "Sha256": "EF8C87A3C91F155C7E161C5D85DBAB4A4B1442CE50DC7166251B6EC9236CC792"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarClickGesture.cs",
+            "Length": 1486,
+            "Sha256": "7939679644E75ADFDFF119B4A8D0A9128DBDB9D5EA541FA8D4320A8CFDD6E412"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarColorEditorState.cs",
+            "Length": 9856,
+            "Sha256": "89310282CD6A1AD6549736766252220A86CD0ECC2CE4EFFF3BF8E729DF99F867"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarDisplaySettings.cs",
+            "Length": 17647,
+            "Sha256": "C21178C8AC4E3E25900AD37E2DAA284E4BB6654951E17A51A5CB913FE8ECDC42"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarGridLayout.cs",
+            "Length": 5803,
+            "Sha256": "5214078043C32BBA22F16B63D18616AD62BDB8FB5E1D7E02517E848EDEB19F6C"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarItemLayout.cs",
+            "Length": 26152,
+            "Sha256": "078F080FD164E20F62468B957000517BDB5C2150D265808EE808F8BB36A48A6B"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarMetricFormatting.cs",
+            "Length": 8372,
+            "Sha256": "F33D793A18CB90C34BBFB19E2271F9628817597793BD17F91A45AEF7DA461C78"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarOverlayLayout.cs",
+            "Length": 11687,
+            "Sha256": "760F121B0684A892E24E43EBDBA878F405B34682DF80965D69F15A43E1349FF5"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarRefreshPolicy.cs",
+            "Length": 8033,
+            "Sha256": "F23B6CD306A330A5056E060108D12AB6D9C6AAF859F2C7EB3A67A773B85E8985"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TaskbarRenderSignature.cs",
+            "Length": 14600,
+            "Sha256": "5E969112FDDAD847D244CF4A378B1E8A11DECE2977557012E15C1D40842D9389"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/Telemetry.cs",
+            "Length": 25351,
+            "Sha256": "C2409E60184D59A7338F66E689144350D2A71746AB4ECF59A9D47255059684B0"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TelemetryFileIndex.cs",
+            "Length": 12764,
+            "Sha256": "50E1033C9928EC59F4E6DD2172218C751E7CA93C3CCE4ED7397DEAD6F3D84928"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TelemetryHistory.cs",
+            "Length": 17195,
+            "Sha256": "1D734188CBC429582924FD4F0328B9878EC43967DFA688F7DAD63519D17DDB90"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/TelemetryRetentionSettings.cs",
+            "Length": 7435,
+            "Sha256": "3ECC68866D0751ADD8B87E919B3937513A2E8F129BE230F3FD0A01F39479D94D"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ToolkitCommandIpc.cs",
+            "Length": 29351,
+            "Sha256": "4D1063503AD26633D046050E4245505BCF14FBFFB8AAAC90B6514563C1FD0CD6"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ToolkitCommandLine.cs",
+            "Length": 15229,
+            "Sha256": "4A66A2C1736749B39BC17B98B9F8F54E9CF451CFE81324BD7CF526D4AD6C7011"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ToolkitCommandOutcome.cs",
+            "Length": 8659,
+            "Sha256": "C9BFDAF77624F2023DE633C221CC2DF4B6FB1C4485ECF12E0BEE53C8BCBCFBD9"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ToolkitCommandRequestCache.cs",
+            "Length": 9305,
+            "Sha256": "9C482ECCEE011887722C4AB46D0473F616C7C36FD40D9F634EF9EF6F63EF14E6"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Core/ToolkitSingleInstanceLock.cs",
+            "Length": 6097,
+            "Sha256": "476F29F0575229F90F910EED873137E7970111BBB6DF6C7202DF483DCBD4266A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Guardian/GuardianWorker.cs",
+            "Length": 9714,
+            "Sha256": "96D20EACCACD6543DEEFC9DBCAFA67E4807764A8A40E2D4F4D6CF6999DCC1833"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Guardian/GuardianWorkerOptions.cs",
+            "Length": 446,
+            "Sha256": "41100F1023258D48A4AF026F716C1F8A469EA33F860E89878BF9243360763B73"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Guardian/MiniProToolkit.Guardian.csproj",
+            "Length": 764,
+            "Sha256": "FABDBD99AE9DE0784BFA7AA354710975A219C18BB427E9D5BC2CCF2F94B7A51F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Guardian/Program.cs",
+            "Length": 773,
+            "Sha256": "28B5DE9EFFE75D46E3DB7E6641DBA93741DC8B02F7EF825EF05D19EFAE73E288"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/AudioEndpointReader.cs",
+            "Length": 34091,
+            "Sha256": "8630B9464E311CAD951BC829EFA8B5C897F8E5321780EEE9BE558BE94FFBE8B6"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/BrightnessReader.cs",
+            "Length": 14672,
+            "Sha256": "CD95DFC9D94CC2BCF42BBA9A1283E0999A1107171CED357061D0C36CD0F1067F"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/CpuClassFrequencyReader.cs",
+            "Length": 8976,
+            "Sha256": "68C708732654244CF720BCD3704B855713B25FC661495F2AA3CF140877F747B1"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/CpuFrequencyReader.cs",
+            "Length": 8238,
+            "Sha256": "F58CDD26D158801E077DF68E3A793995BA27C3BE1AF05EFA0A10B5DC8DCC1140"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/HardwareCapabilityProbe.cs",
+            "Length": 9836,
+            "Sha256": "96A46A3430A14DC7E6C12B9500120A9A1A178C11F591045058B89A2C10763748"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/LibreHardwareMonitorAuxTemperatureSensor.cs",
+            "Length": 6137,
+            "Sha256": "548E2B2B60872087DB412B58508A23E384AB77308F7DC0BB56F9A3D054D4299A"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/LibreHardwareMonitorCpuSensor.cs",
+            "Length": 12697,
+            "Sha256": "0BB589B1173C51EAB44254AB53AB6793264D8E857BA7841D0ED8A9B28D7CEAF4"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/LibreHardwareMonitorGpuSensor.cs",
+            "Length": 12942,
+            "Sha256": "F938EF0BA42BC88CA966384C48C9B859B5568FE9C5D54507F3968B739604D9A3"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/MiniProToolkit.Hardware.csproj",
+            "Length": 721,
+            "Sha256": "AAF9432F254150216239818D3D01CD511DA2202069310A7CA5624B7705BDEFFB"
+        },
+        {
+            "RelativePath": "src/MiniProToolkit.Hardware/PowerSwitchHardware.cs",
+            "Length": 16834,
+            "Sha256": "F5C09C5D0D060E2B2C9D8E81C51431513A4FA768F021CFB16628845AC740609B"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/AccessibilityMarkupTests.cs",
+            "Length": 53583,
+            "Sha256": "21AF35CB334B6D29C2B04613D73EA954431A205A4E8D597A40C6E397C8305A5E"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/AuxTemperatureTests.cs",
+            "Length": 11476,
+            "Sha256": "4D49243CE54A4303143C2126ADE97BEDC62647FF955709BD9562C1C99F17ADE2"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/BoundedLogsHardeningTests.cs",
+            "Length": 11310,
+            "Sha256": "CB521A4042C8B7D7D0FD5185FF623501BBFE33C4632F76B1C07DC357E24C62F8"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/BrightnessPanelSelectionTests.cs",
+            "Length": 6626,
+            "Sha256": "89ED334AD7DE96B9581EAAAD102165A3083E32C8A68B33B448C3990DD56A6D47"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/CpuClassFrequencyTelemetryTests.cs",
+            "Length": 12459,
+            "Sha256": "1A70064327D0C9AB493F57DFEBD6F72BF50DD3723692B8C519BABAD5F2BB6E5A"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/CpuClassFrequencyTests.cs",
+            "Length": 9223,
+            "Sha256": "1D82D16A5A4C07DB8F64EE0F4FBDA9D77C9D4C7016EF8BAD4424029BC3F2459D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/CpuDisplaySourceSettingsTests.cs",
+            "Length": 15447,
+            "Sha256": "18F0725A85D58E899E31F0C57FC24143EA65F4AC380BCF741C4A4B9B2588698F"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/CpuFrequencyTelemetryTests.cs",
+            "Length": 10186,
+            "Sha256": "F7C282932DEB076BE58A5D4D97BD4ABD91D0EAB2822B7E19BAD59ADCCAB7BF03"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/CpuFrequencyTests.cs",
+            "Length": 4539,
+            "Sha256": "3F379675648AC565451B5DE01AA5CF2F9E7350F5D456DF0FD5DC44DE5214973D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/DiagnosticEventPathSafetyTests.cs",
+            "Length": 13801,
+            "Sha256": "CE0CE43439A82CEBB5F6D411B863C85FD6B1E5FB42D6F432B45D219BC82DC8C6"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/DiagnosticEventStoreTests.cs",
+            "Length": 1039,
+            "Sha256": "D720217AF4BCCE7CC65BC8EEA0316A2BE21D015559B864293B261A3BD42C4F3F"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCalibrationSamplingTests.cs",
+            "Length": 6630,
+            "Sha256": "D37A5354603E4E4C23796A63C1D57EA5EE5BBF1D39D563C294D08DDADED99758"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCalibrationStoreTests.cs",
+            "Length": 4491,
+            "Sha256": "2DF2714B44B9B92AE215201FDB1F3C26C41B8E5D051BA5C31EE8653595B9697F"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCalibrationTests.cs",
+            "Length": 1498,
+            "Sha256": "115C3E48DCF94B27AD628ECEBEB6828BA40446B7FBAFA982A6E8A3D2E650B63D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveCalibrationCompatibilityTests.cs",
+            "Length": 5369,
+            "Sha256": "96CBA6DDD3F30CD6A97D66E3D62ED29F2757B3776C16CC944584AD0CF9B11CAF"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveCalibrationWiringTests.cs",
+            "Length": 7198,
+            "Sha256": "4E0D61A16D39AEA69F1DF6E886C7E71C3B6A890D2490C6EC6A004B696085C67F"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveConfigurationTests.cs",
+            "Length": 13599,
+            "Sha256": "2F75169E3E845014EFAA450A659DAE926DA97C82D8DB5BA06B0326621D60449C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveControllerTests.cs",
+            "Length": 2578,
+            "Sha256": "E6C4D066496364387924C9719DFF6E3F6218345DF6AC37650EA259E1E13B4B85"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveDefaultTemplateTests.cs",
+            "Length": 9390,
+            "Sha256": "EFCB4887F4640A636A5807393D77632D60BA0EBFB520C5592D9DD85AE66C4601"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveEmergencyLatchTests.cs",
+            "Length": 5453,
+            "Sha256": "EE91A25BF1153F531367659359FC24941A45FFA5047075D361EBEE6A2A1213AD"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveLeaseGateTests.cs",
+            "Length": 7655,
+            "Sha256": "E7994C37B0E5B54E0E56C5CB2DBE95179FC4BB7B5EE856882A5C9AF054AB9CA0"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveRampTests.cs",
+            "Length": 1885,
+            "Sha256": "A925CB5B402AE33BA02AF4EB8F4219A61243A1BC3A547BF1AB93380AD63BF29C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveRpmFeedbackConfigurationTests.cs",
+            "Length": 5405,
+            "Sha256": "02E20DE772B5B29BD80F921B46AFD3F01A959A8D560E56D89385A7AF078C27EB"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveRpmFeedbackTests.cs",
+            "Length": 11405,
+            "Sha256": "22008E99B9ADB7CF8B5FB4412BD79397138015C87708AF85DA962D6B947D7D56"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveRpmRateLimitTests.cs",
+            "Length": 15486,
+            "Sha256": "480C1988336CF38E207B297A1B371CB1AA15B88A0B860EDB7B7E2F3805988BD5"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveRpmTrackingTests.cs",
+            "Length": 15215,
+            "Sha256": "016CEC02A813AD9168B3BF6C8F0FA458760DEEEA1C18B5CD8F332480E18372B4"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveStatusTests.cs",
+            "Length": 15130,
+            "Sha256": "885D2A1A6AA9D18F1D99124204C8BBBCD0E495EF1D125950D9DF780507E2F237"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveTemperatureTierTests.cs",
+            "Length": 9844,
+            "Sha256": "D48A4AB22E064E53507D62E21877694603A0BA9AC2545FD7EEA355FD58C8A202"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveTests.cs",
+            "Length": 2659,
+            "Sha256": "D457CC38E6DB346A0D197A5133BAEA05B36613CB06476F1EA480ACC78E7F0197"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanCurveTrackingTelemetryTests.cs",
+            "Length": 8262,
+            "Sha256": "D3109571BC871ABBAD292D4AD416592F869D7A671AC248B69CD95AD237EA59D0"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanProfileApplicationTests.cs",
+            "Length": 2927,
+            "Sha256": "66DDF58E0428EF93B8B589EB3318B11A11D8C164A341543B55334C8D79650D1E"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanProfileSafetyFieldTests.cs",
+            "Length": 10549,
+            "Sha256": "A7189253A0DF706ED01F7883AD401625F4A05680780C1AD05BA3B9421D3D033F"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanProfileTests.cs",
+            "Length": 3188,
+            "Sha256": "0E8D1F5D09456DEBC9664CE9AAFCF6735F57D64B707DE6CD0E80C0CE2102CDEF"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FanRpmFeedbackControllerTests.cs",
+            "Length": 2520,
+            "Sha256": "03881999DF339310F0C7BB1CC6995EEB61BB6A5A3377F25E894BF1C2D78DF2D5"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FixedRpmBadSampleToleranceTests.cs",
+            "Length": 8087,
+            "Sha256": "069D92992925D757042026C88CD1B79D350D33AE8ADE45078BD72A3FB0CB1CE4"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FixedRpmControlSessionTests.cs",
+            "Length": 18712,
+            "Sha256": "1D1498C5E2298A3DC851AA95EE5942706C4D933C3A1856E8D550207E1AFE0AE2"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FloatingStatusInteractionTests.cs",
+            "Length": 7268,
+            "Sha256": "9557338D3BEF73C458FD256C3E4E04EA04947741450B6E8B8A5AF002A5057C84"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FloatingStatusLayoutTests.cs",
+            "Length": 21382,
+            "Sha256": "0C3396B9AB4ED46C8AAC22A2C351116DEFAC1804DE65C8214AF5A34ADD8540C7"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FloatingStatusMarkupTests.cs",
+            "Length": 55825,
+            "Sha256": "EB883B414B9E6A9BA3F77820027F7B544B2C199C53D1397086A4248820A65ABA"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/FloatingStatusSettingsTests.cs",
+            "Length": 22128,
+            "Sha256": "67DB988B27E73E56034A90EFAC304ACF696C5B52B39B1D5D4F30E96E55E311EC"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/GpuTelemetryTests.cs",
+            "Length": 4948,
+            "Sha256": "ADF8908AB6F9D7FEE4078DBC27A58DB2BB4D05135720052E9CFBE3CF5901AA6B"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/GuardianCurveLeaseWiringTests.cs",
+            "Length": 13926,
+            "Sha256": "34DB4067D943DB4A89FB276FD67794F3A7BB4F107AF51C5D2263039A50381EE4"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/GuardianLeaseReadTests.cs",
+            "Length": 17521,
+            "Sha256": "08FE8373BA613A484BE0803A54710C7B348C8C02FF2BBC89774C54FC6D41F69B"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/GuardianLeaseTests.cs",
+            "Length": 28949,
+            "Sha256": "C1E835CA2323F547C084B082B2DA5D86690D8A3B85C50A4B5987E771D6A447B0"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HardwareCapabilitiesTests.cs",
+            "Length": 2054,
+            "Sha256": "0C5F843868D591A6CA3FC75F38EC4AC649D57EF94580E79D04639838B84AC869"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HardwareSnapshotTests.cs",
+            "Length": 1367,
+            "Sha256": "FC6311DD574943C54593649D5CDAC29275EF50C0337E0C5D0BD09FFD76F708A1"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HardwareWmiTimeoutTests.cs",
+            "Length": 6392,
+            "Sha256": "59864EC7BDA8DFC335314FF0E5F4681D53C570325BB65EDC099876D021395778"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HotkeyRebindTransactionTests.cs",
+            "Length": 7831,
+            "Sha256": "00A626839E118254081E014A5ABFD9954B82FFE49A5950E77D68B9AD2942A66C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HotkeyRebindWiringTests.cs",
+            "Length": 4618,
+            "Sha256": "35E5B6F801A800D2E556C1FB8648BA2AF13D367ADABB442DBDF3B33183A7E729"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/HotkeySettingsTests.cs",
+            "Length": 29212,
+            "Sha256": "C7ACB023DF5EDBF6D6E12EA844C5771BE0162E37F660ABB3093BF2738C972D46"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/LhmCrossCheckTelemetryTests.cs",
+            "Length": 3545,
+            "Sha256": "B705CD6EAA7CF8C6A6C3D3EBA961FB827559131ED1F675905048163553462E68"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/LhmGpuSensorSelectionTests.cs",
+            "Length": 6240,
+            "Sha256": "94094008D855B3BCEE7B857ABE14AD29CE0DB06B13DA54550DCED4795DC2ABD8"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/LhmRetryPolicyTests.cs",
+            "Length": 2774,
+            "Sha256": "19EDD2D1896A52786C30263512C5DC30C8F5097BDE29BE95E8C254F488A1FF46"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/LhmSensorSelectionTests.cs",
+            "Length": 11565,
+            "Sha256": "0D9A55F55241E6E9B7D2F103F6BBAB64F53DFF68D42BF5A00C5629DBBD34646D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/MainWindowPerformanceMarkupTests.cs",
+            "Length": 18134,
+            "Sha256": "FCD07BA030505CE4C796B8BCC6468CD468D0583C58148DD3F34AA4912691CE7E"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/MetricDisplayFormatTests.cs",
+            "Length": 1694,
+            "Sha256": "2A15F726FC9C88FCF5B0033CAE5347C841C9210974A3D955FA77E33E3E5A252A"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/MiniProToolkit.Core.Tests.csproj",
+            "Length": 639,
+            "Sha256": "03E57EE4FAA95E69ABF6C0D3EFE26A806056BBB4E24D4A7EA496780F89B3AD24"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdAppearanceTests.cs",
+            "Length": 18333,
+            "Sha256": "E67D9A6831F3A5642682BFE0D749C753E9FB233C58B32ED33A47D76E93A83876"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdEventTemplatesTests.cs",
+            "Length": 11430,
+            "Sha256": "0B78ECC7B79CB18C118081024EB02A22B72B10FA44C7131B07907FABA28463B5"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdMessageTests.cs",
+            "Length": 6908,
+            "Sha256": "513F7873A011055A4E020B6F91D46653DCB84594D13500B464C4CB240282E5FD"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdNotificationsTests.cs",
+            "Length": 7565,
+            "Sha256": "9703E002676E5FEA8E5FBB09E11E205F4D7F3F09026161A7EC45693008FA6CA6"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdPreferencesTests.cs",
+            "Length": 15044,
+            "Sha256": "CF20D8E72FEDAE5EA614C86F045105D3DAD289E017DA8A58176B2FDA062D5BBF"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/OsdThemeTests.cs",
+            "Length": 11176,
+            "Sha256": "32FE6CC818847E4C5B1FEC210CDB4AB7E50890DE2ADD7D25751C421899E0D3C7"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/PowerModeWriteVerificationTests.cs",
+            "Length": 8874,
+            "Sha256": "343A59536972FF90BDD3361FACDCC93C3B2595DF36DD7D079C93D7592BD6FEC1"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/PowerTransitionRecoveryTests.cs",
+            "Length": 2602,
+            "Sha256": "B2BBDFEC3FDD856634FB9620233B5AD54D544108DB1E6B0BBEA48C0BC7A2C66B"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationHistoryTests.cs",
+            "Length": 11249,
+            "Sha256": "A832774C63AF096BEB14DFC89E2C2537D98170449EF5F8A8435CCDCD0E017615"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationOrphanTests.cs",
+            "Length": 10628,
+            "Sha256": "48DD25C8D53814F6F383742EF133229F61573444AB58C3A2ABCB28D4373A7146"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationProcessConditionTests.cs",
+            "Length": 17326,
+            "Sha256": "E0399F94BF8C6A42E1C9D2FFA3D27D35CBB76343F0396F01696D54FBDA7FC385"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationStatusTests.cs",
+            "Length": 18339,
+            "Sha256": "48E879941ECD034DA9E75A5E053D22DF0FFFF97926B1E9EF56CF9A98C55F3FB2"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationStoreCompatibilityTests.cs",
+            "Length": 9726,
+            "Sha256": "FFBE2EA4CBF95EFBBA8833E2BDD9ACDDCBCCFB52C07BB09B17016D6C9413D35B"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ProfileAutomationTests.cs",
+            "Length": 8361,
+            "Sha256": "409FAB9AB59F67FA7BE116BAE43B4D60292A1FBA13C73AA46320FF7FF09EB14A"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/SensorTraversalBoundsTests.cs",
+            "Length": 10011,
+            "Sha256": "D4E1CDE403FA60C7E16D4745A7AD6B8D9070F76B50597F09F73B719BC9D1F944"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ShutdownSequenceTests.cs",
+            "Length": 3459,
+            "Sha256": "0E935F77230AD154AA906561E845BFA14BECFE565862859C9059C837C09C908C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ShutdownSignalExitTests.cs",
+            "Length": 5009,
+            "Sha256": "0E7C3D917338E544BAD593F06BD00631DB144B2142BC3BDF05BE5C315E0FB692"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/SingleFlightOperationWorkerTests.cs",
+            "Length": 10482,
+            "Sha256": "9127E2A83CD5800AA2B32A22DF69B2F85480B941CEC4AD12046DEC256AD5EBEB"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/StatusRenderPerformanceTests.cs",
+            "Length": 36256,
+            "Sha256": "AB5FBB027E2D9EDF70514B1BF4EB25594623AD95E1E68B08F9007C874E046A14"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/StoragePerformanceTests.cs",
+            "Length": 24183,
+            "Sha256": "6DFD120C817B36A97CD3EC0DEA4BDA470548F5EDE3223C4834CE75C252D31F15"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/SystemIndicatorsTests.cs",
+            "Length": 10691,
+            "Sha256": "8CF10ABDF567555B94B574EBF0879F4D056157F5305AB491F4278FF4CEEF1218"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarClickGestureTests.cs",
+            "Length": 1773,
+            "Sha256": "CEBE00FDC4CF32E95F036A91116C13F5BE50F9937525886F9ACB4E2F6CF06C48"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarColorEditorStateTests.cs",
+            "Length": 8031,
+            "Sha256": "1DDD2A98DA688A972F7224E8FCCA45E909E2905ADEE6F624B2D8D17A0EC75AA8"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarDisplaySettingsTests.cs",
+            "Length": 35920,
+            "Sha256": "4E35E09CE72ACCC65BAC1F3BB09A760B77475C8DABE6C706C3CB27E3787154D7"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarEnumerationMarkupTests.cs",
+            "Length": 5926,
+            "Sha256": "970A603631E8B620A270AFED3CD23358B0EAD54068D90A4D812C8A45099EA7DC"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarGridLayoutTests.cs",
+            "Length": 8457,
+            "Sha256": "20F1040947E78675D3CED9717BC55E843D400DA810485F5082A901918D91A67D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarItemLayoutTests.cs",
+            "Length": 26557,
+            "Sha256": "A4737F213DE42DE317730037E880CAA962A44ED4FA7824D541484D64FAEA2A7E"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarLifecycleMarkupTests.cs",
+            "Length": 13560,
+            "Sha256": "C7A409994516784E497D335A334469958501764DEEE34B7E3B3A53EA1FFD01DA"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarMetricFormatterTests.cs",
+            "Length": 10745,
+            "Sha256": "1731367B20A10ECDC9DF900BF43FB2910691E8EB9D0EE11560B8BA172A6B8FBA"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarOverlayLayoutTests.cs",
+            "Length": 23161,
+            "Sha256": "4999C981CBF50D428B31C29773F0C337F33D6CB7B3D763A9D37ACECDA316E16D"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TaskbarRefreshPolicyTests.cs",
+            "Length": 5049,
+            "Sha256": "F0564A345DD843F35969149B2F846618758337BE57EDE9734BD22A3CCF3F2CB2"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TelemetryFileIndexIntegrityTests.cs",
+            "Length": 11542,
+            "Sha256": "D7322DA41534FA5D31FF8B42CC42C18F9A3B38F9716291671DE8D2E99FC7234C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TelemetryHistoryTests.cs",
+            "Length": 9478,
+            "Sha256": "15A439EB2D613C9F2C20434111737EF6F98BC58DE53030F351CCE92B0F22CAD8"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TelemetryRetentionAndIndexTests.cs",
+            "Length": 20423,
+            "Sha256": "27C1BA160FD9C94B957B92FCAD9AE76BE8162DAA36D091F1DBE77806BE6F4A7A"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TelemetryRetentionFailClosedTests.cs",
+            "Length": 10373,
+            "Sha256": "D4641600148D565C9CACBC4C481DA2BB1F8CF37F4C8ABEA1ABBBB27E74AC9735"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/TelemetryTests.cs",
+            "Length": 5873,
+            "Sha256": "DAD8781FD45E1597A0ABF829B67F8B55AD5F5D5EEC994356104194D6247B92C2"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandBusyTests.cs",
+            "Length": 8003,
+            "Sha256": "1934FBBFE8B88C70F41CFBAE98A3E7059DC43C7A761042953A46C753834D93F7"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandIpcTests.cs",
+            "Length": 18921,
+            "Sha256": "35B015648A1054806DEF5517840B35AA2EC38AAB6F56272C62E4772317020150"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandLineTests.cs",
+            "Length": 11734,
+            "Sha256": "D73EF5B5DC632F14AE27C2A0B05C2B352753F73E1EF8907FEFC6110FD8CEA710"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandOutcomeTests.cs",
+            "Length": 6524,
+            "Sha256": "CAFDFC80B795BFEF9575F142BD7ED2FD23026FE614074FBB8D43CD57F9BB951C"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandRequestCacheTests.cs",
+            "Length": 11563,
+            "Sha256": "087DA02E64C8BF59DBDC8B8124C977D4105C24FDF4F5291973CE8B056FBBA946"
+        },
+        {
+            "RelativePath": "tests/MiniProToolkit.Core.Tests/ToolkitCommandSingleInstanceTests.cs",
+            "Length": 14441,
+            "Sha256": "7C6E937B5EC8C954D1B05438746A49B08F1811D7BF62AC812FBAD448CA06D966"
+        },
+        {
+            "RelativePath": "tests/test-package-common-purge.ps1",
+            "Length": 15913,
+            "Sha256": "6E66A23B1599A7C42ED91E05C1D395E8474B07C24F01D3F013F2BAF8695D2089"
+        }
+    ]
 }

@@ -8,6 +8,18 @@ public sealed class HardwareCapabilityProbe
     private const string NamespacePath = @"root\WMI";
     private const string InstanceName = @"ACPI\PNP0C14\IP3POWERSWITCH_0";
 
+    // Hard bound for the WMI object bind: ObjectGetOptions.Timeout makes ManagementObject.Get
+    // semisynchronous, so a wedged PowerSwitch provider fails instead of blocking forever.
+    private static readonly TimeSpan WmiObjectTimeout = TimeSpan.FromSeconds(2);
+
+    // Whole-probe budget. GetMethodParameters has no per-call timeout overload in
+    // System.Management 10.0.10, so the only guarantee available is that the caller (and the
+    // shared worker slot) is released within this budget and that probes never stack up.
+    private static readonly TimeSpan PowerSwitchProbeTimeout = TimeSpan.FromSeconds(10);
+
+    private static readonly SingleFlightOperationWorker PowerSwitchWorker = new(
+        "MiniProToolkit-Wmi-PowerSwitch", thread => thread.SetApartmentState(ApartmentState.MTA));
+
     private const string BrightnessId = "brightness";
     private const string BrightnessName = "屏幕亮度";
     private const string AudioId = "audio";
@@ -16,6 +28,11 @@ public sealed class HardwareCapabilityProbe
     /// <summary>States that a read-only reading alone can never open a capability.</summary>
     private const string NotOpenSuffix = "只读读数不构成写回验证证明，该能力保持未验证、未开放。";
 
+    /// <summary>
+    /// Read-only capability probe: the power-switch WMI check runs on its own bounded worker
+    /// (one probe at a time, released even when the provider wedges), brightness and audio use
+    /// their readers' own bounded waits.
+    /// </summary>
     public HardwareCapabilities Probe()
     {
         var items = new List<HardwareCapability>
@@ -31,8 +48,9 @@ public sealed class HardwareCapabilityProbe
     /// Read-only system indicator snapshot for the diagnostics window: internal panel
     /// brightness plus the default output volume/mute and default microphone mute.
     /// Blocking (the CoreAudio read joins its own MTA thread with a 3 s timeout, the WMI
-    /// read is synchronous), so call this from a background thread. Lock keys are passed
-    /// in because they come from the UI thread's <c>Keyboard.IsKeyToggled</c> state.
+    /// read is synchronous but now carries a hard query timeout), so call this from a
+    /// background thread. Lock keys are passed in because they come from the UI thread's
+    /// <c>Keyboard.IsKeyToggled</c> state.
     /// <para>
     /// Nothing here writes: only <see cref="BrightnessReader.Read"/> and
     /// <see cref="AudioEndpointReader.Read"/> are called, and both are read-only. Any
@@ -46,14 +64,20 @@ public sealed class HardwareCapabilityProbe
         return new SystemIndicatorSnapshot(lockKeys, brightness, audio.Output, audio.Microphone);
     }
 
-    private static HardwareCapability ProbePowerSwitch()
+    private static HardwareCapability ProbePowerSwitch() => PowerSwitchWorker.Execute(
+        ProbePowerSwitchCore,
+        new HardwareCapability("power-switch", "性能模式与风扇控制", CapabilityState.Error,
+            "PowerSwitchInterface 只读探测未在时限内返回（provider 可能卡住）；本次按错误处理，未写入任何硬件。"),
+        PowerSwitchProbeTimeout);
+
+    private static HardwareCapability ProbePowerSwitchCore()
     {
         try
         {
             using var instance = new ManagementObject(
                 NamespacePath,
                 $"PowerSwitchInterface.InstanceName='{InstanceName}'",
-                null);
+                new ObjectGetOptions { Timeout = WmiObjectTimeout });
             instance.Get();
             var methods = new[] { "GetFanControl", "SetFanControl", "GetPowerMode", "SetPowerMode", "GetHwTemp" };
             var available = methods.Where(name => HasMethod(instance, name)).ToArray();
@@ -74,6 +98,9 @@ public sealed class HardwareCapabilityProbe
     {
         try
         {
+            // No timeout parameter exists for GetMethodParameters; the object's
+            // ObjectGetOptions only bounds the bind above. The enclosing PowerSwitchWorker
+            // budget is what stops a wedged method lookup from blocking indefinitely.
             using var parameters = instance.GetMethodParameters(method);
             return parameters is not null;
         }

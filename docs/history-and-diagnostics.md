@@ -21,11 +21,17 @@
 
 `HistoryChartScale` 与窗口将温度（°C/°F）、RPM、百分比、W 分为四个独立单位面板，共享时间/缩放/平移；按观测值在有界范围内调整量程。目标 RPM 优先使用曲线目标。°F 只转换绘图值，采样表、存储和导出仍为 °C；缺值和明显时间间隙断线，像素桶保留首/末/最小/最大点。CPU 功耗来自 Windows Energy Meter 的 RAPL Package 计数器（单位转换为瓦特），是处理器封装估算值，不是整机插座功率；平台未公开有效计数器时记录为空。历史窗口不是实时采集器，不会触发 WMI 读取，也不会改变当前风扇控制。
 
+### 日志与事件读取边界（已落地源码，未实机验收）
+
+应用日志（`AppLog`）与 Guardian 日志都走 `Core/BoundedTextLog`：活动文件上限 **2 MiB**，按大小轮转为 **3 份归档**（`guardian.log` → `guardian.log.1` → `.2` → `.3`），单条日志上限 32 KiB，超长条目在 UTF-8 rune 边界截断并附中文截断标记；归档或活动文件是链接时拒绝写入，不做部分轮转。历史窗口按同一有界集合读取：**`path.3` → `path.2` → `path.1` → 活动文件**（最旧优先），每份只读末尾 **2 MiB / 最多 2000 条**，单来源上限约 8 MiB / 8000 条，应用 + Guardian 合计约 **16 MiB / 16000 条**临时记录（只在内存里合并，不落盘、不改日志文件）。轮转只保留 3 份，更早的归档内容会被覆盖淘汰，所以界面会明确提示“每份仅读末尾、最多 3 份归档、最早内容可能已淘汰”，不把日志当完整历史呈现。日志文本自带路径等本地信息，导出前仍需人工检查，脱敏摘要不包含原始日志导出。
+
+持久诊断事件 journal 走 `Core/DiagnosticEventStore`：**单条消息上限 8192 逻辑字节**（按 UTF-8 rune 边界截断并加标记，不静默丢事件），类别 ≤128 字节、来源 ≤256 字节且**只校验不截断**（超限直接拒绝写入），整行序列化上限 64 KiB；活动文件 2 MiB 并按追加后的真实字节数决定轮转，保留 **4 份归档**（`.1`..`.4`）。读取只取最近 200 条，坏行忽略；不安全目录或链接文件跳过而不是穿透读取。应用 journal 位于 `%LOCALAPPDATA%\MiniProToolkit\history\diagnostic-events.jsonl`，Guardian journal 位于 `%ProgramData%\MiniProToolkit\diagnostic-events.jsonl`，两者共用同一套上限与轮转规则（Guardian 的 `.1`..`.4` 归档同样存在，卸载清理只按精确文件名处理，见 [release-packaging.md](release-packaging.md)）。
+
 ### 保留设置与文件级索引（已落地，未实机验收）
 
 `TelemetryRetentionSettings` 默认单文件 10 MiB、3 份编号归档，不启用年龄清理；可配置 1–100 MiB、1–30 份、年龄留空或 1–365 天，保存在历史目录 `telemetry-retention.json`。年龄仅按归档文件 mtime，不逐行按采样年龄删除。清理只选 `telemetry.jsonl.N` / `telemetry.csv.N` 正整数编号文件，不清活跃文件、schema 备份或任意外部文件；窗口提供清理预览/确认，执行时复核长度/mtime，预览后变化则跳过，并拒绝链接路径。
 
-`TelemetryFileIndex` 的 `telemetry-index.v1.json` 是本机文件级缓存，不是数据库。只有可信完整扫描、文件 stamp（长度/mtime/创建时间/首尾摘要）一致且时间 min/max 在筛选区间外时才跳过文件；缓存无效、文件变化或扫描有警告时回退扫描，不用首末行假设有序。默认总扫描预算为 500000 条，达到上限明确警告结果不完整并提示缩小时段；截断文件不标记 trusted，索引跳过的文件不消耗扫描预算。`history-memory-budget.trx` 87/87 通过不等于实机或全量验收。取消/关闭有取消门，不启动硬件读取。
+`TelemetryFileIndex` 的 `telemetry-index.v1.json` 是本机文件级缓存，不是数据库。**文件名仍保留 `v1` 字样，内容版本已升到 2**：每个条目写入 `stamp`（长度/mtime/创建时间/首尾 4 KiB 摘要）与 `SummaryIntegrity`（对首尾摘要 + min/max/count/trusted 求 SHA-256 的确定性摘要）。只有可信完整扫描、stamp 一致且 `SummaryIntegrity` 复核通过且时间 min/max 在筛选区间外时才跳过文件；**旧版本 1 缓存被直接拒绝**（警告 + 全量重扫，不做迁移），过期/无效/条目非法/路径不在索引目录或不是 `telemetry.jsonl` + 正整数编号归档/文件是链接时同样回退扫描，不用首末行假设有序。写回走同目录临时文件 + 原子替换。默认总扫描预算为 500000 条，达到上限明确警告结果不完整并提示缩小时段；截断文件不标记 trusted，索引跳过的文件不消耗扫描预算。`history-memory-budget.trx` 87/87 通过不等于实机或全量验收。取消/关闭有取消门，不启动硬件读取。
 
 ## 可选 LibreHardwareMonitor 对照字段
 
@@ -134,7 +140,7 @@ MainWindow、JSONL `cpuClassFrequency` 和history只读列已有接线，含分�
 
 ## 历史定向证据（保留，不作当前全量总数）
 
-本次未运行App/硬件/构建/测试/脚本/服务/提权。已有 `research/evidence/current-validation/` TRX counters：CPU分组65、接线88、history硬化15，辅助温度62/新鲜度29，tracking遥测195，均failed0；各过滤运行可能重叠，不相加为独立总数。`final-debug-build.log` 为历史统一Debug证据：exit0、0warning0error。
+本次未运行App/硬件/构建/测试/真实脚本/服务/提权；本轮只跑静态 AST 检查（`scripts/check-ps-syntax.ps1 -All`，20 脚本 exit 0）与离线 fixture `tests/test-package-common-purge.ps1`（PASSED，脚本副本 + 沙箱 `%ProgramData%`，不触碰真实目录）。已有 `research/evidence/current-validation/` TRX counters：CPU分组65、接线88、history硬化15，辅助温度62/新鲜度29，tracking遥测195，均failed0；各过滤运行可能重叠，不相加为独立总数。`final-debug-build.log` 为历史统一Debug证据：exit0、0warning0error。
 
 历史 `readonly-system-probe.json` 的唯一只读重试已完成：7calls全部返回、host exit0约1.58秒；CPUclass两次NotApplicable（单效率等级16LP），CPUtotal首样本baseline3793MHz/current=null，audio输出/麦克风无可用值且controls probe=false，brightness无内建面板实例且probe=false。早期0调用依赖阻塞留在history；未setter/EC/LHM/服务/提权。只读已运行但多数不可用，不等于写入/温控验收。历史 `final-release-summary.json` 的 Release954/954 与ZIP/Setup只保留原快照范围；当前mode-fix基线及本轮文档边界见下文，不能把历史读数当当前源码/准确性验收。
 
@@ -148,9 +154,9 @@ MainWindow、JSONL `cpuClassFrequency` 和history只读列已有接线，含分�
 
 只读证据：`runtime-eligibility.json` 非管理员、AMD Ryzen 7 8745H、接口元数据存在、Guardian Running；其中证书 harness 失败为历史；纠正后的同步只读 `code-signing-availability.json`/`.log` exit0，CurrentUser/My 与 LocalMachine/My 各有 0 个当前有效且显式 Code Signing EKU 证书、匹配 HasPrivateKey 数也各为 0，仅限这两个 store，不覆盖原 runtime 历史或推断所有证书来源。`readonly-lhm-probe.json` 仅现有 Debug：CPU 温度/功耗 null、GPU 32°C、主板/存储 null。`hosted-demo-smoke.json` attempt 2 纠正 harness 后 PASS：3 次 status exit0/demo=True、activate exit0、8 不同遥测时间戳、正常 shutdown exit0/无 kill；attempt1 是 harness 失败。宿主 `Environment.ProcessPath=dotnet`，不验证发布 apphost 身份/权限，该历史记录不验证apphost；后续真实管理员Release apphost/demo已通过，早期ERROR740不再是当前阻塞。有限真实风扇/正常生命周期证据见下文；睡眠/Explorer/长时验收仍缺。
 
-## 当前快照、读数与剩余边界
+## 历史快照、读数与剩余边界（保留，非当前结论）
 
-`research/evidence/current-validation/mode-fix-release-summary.json` 与 `mode-fix-install.json` 确认无filter/无SkipTests的Core Release1088/1088、Debug0warnings/0errors，新ZIP/Setup hash与740项实际安装manifest全匹配，同版本升级成功。准确hash见 [发布说明](release-packaging.md)。本轮仅文档/目录整理，不改源码/bin、dist或已安装副本，不重新打包；仓库新文档尚未入现有包，未来发含新文档的包需重建验证。lite子产品和其打包脚本已移除，主项目不依赖它们。
+`research/evidence/current-validation/mode-fix-release-summary.json` 与 `mode-fix-install.json` 是**历史已验快照**（对当前工作树已过时）：无filter/无SkipTests的Core Release1088/1088、Debug0warnings/0errors，当时ZIP/Setup hash与740项实际安装manifest全匹配，同版本升级成功。准确hash见 [发布说明](release-packaging.md)。本轮只改 `scripts\package-common.ps1`（卸载清理白名单、包内必需文件清单）与文档，不改 App/Guardian/installer 源码逻辑、bin、dist 或已安装副本，不重新打包；**当前源码的全量 Release 测试与真实 publish/安装仍未实跑**，不得沿用上述旧读数。仓库新文档尚未入现有包，未来发含新文档的包需重建验证。lite子产品和其打包脚本已移除，主项目不依赖它们。
 
 `mode-fix-live-validation.json` 的三模式请求均exit0且稳定；旧总false因LastAccess元数据比较而保留。独立 `mode-fix-cleanup-review.json` 的模式验收与配置内容/权限恢复均true，终态无App/lease、GuardianRunning。一次setter后1秒只读poll、25项fake及三模式成功是硬化，不证明截图expected0/got2根因或已根治。
 

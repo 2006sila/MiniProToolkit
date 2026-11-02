@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 namespace MiniProToolkit.Core;
@@ -10,6 +11,148 @@ public sealed record GuardianLease(
 {
     public bool IsStale(DateTimeOffset now, TimeSpan timeout) =>
         now - HeartbeatUtc > timeout || now < HeartbeatUtc - TimeSpan.FromSeconds(2);
+}
+
+/// <summary>
+/// Outcome of one lease-file read. A read that fails for any reason other than "there is no file"
+/// is <see cref="GuardianLeaseReadStatus.Unreadable"/> and never collapses into
+/// <see cref="GuardianLeaseReadStatus.Missing"/>: "no lease" is a decision the recovery
+/// coordinator may act on, while "the lease could not be read" is not - the owner is unknown, so a
+/// caller must defer the decision instead of writing hardware.
+/// </summary>
+public enum GuardianLeaseReadStatus
+{
+    Missing,
+    Success,
+    Unreadable
+}
+
+/// <summary>
+/// Typed, diagnostics-friendly lease read result. <see cref="Reason"/> is a fixed, bounded message
+/// from a closed set: it never contains the lease path, the file content or a raw exception
+/// message, so it is safe to put in a log or a diagnostic event.
+/// </summary>
+public sealed record GuardianLeaseReadResult
+{
+    public const string MissingReason = "lease file is absent";
+    public const string EmptyReason = "lease file is empty";
+    public const string AccessDeniedReason = "lease file access was denied";
+    public const string IoReason = "lease file could not be opened";
+    public const string InvalidJsonReason = "lease file is not valid JSON";
+    public const string NotAnObjectReason = "lease file root is not a JSON object";
+    public const string NotALeaseReason = "lease file is not a usable lease record";
+    public const string SuccessReason = "lease file is valid";
+
+    private GuardianLeaseReadResult(GuardianLeaseReadStatus status, GuardianLease? lease, string reason)
+    {
+        Status = status;
+        Lease = lease;
+        Reason = reason;
+    }
+
+    public GuardianLeaseReadStatus Status { get; }
+
+    /// <summary>Non-null only for <see cref="GuardianLeaseReadStatus.Success"/>.</summary>
+    public GuardianLease? Lease { get; }
+
+    /// <summary>Fixed reason from the constants above; never a path, JSON fragment or exception text.</summary>
+    public string Reason { get; }
+
+    public bool IsSuccess => Status == GuardianLeaseReadStatus.Success;
+
+    public bool IsUnreadable => Status == GuardianLeaseReadStatus.Unreadable;
+
+    public static GuardianLeaseReadResult Missing { get; } =
+        new(GuardianLeaseReadStatus.Missing, null, MissingReason);
+
+    public static GuardianLeaseReadResult Success(GuardianLease lease) => new(
+        GuardianLeaseReadStatus.Success,
+        lease ?? throw new ArgumentNullException(nameof(lease)),
+        SuccessReason);
+
+    public static GuardianLeaseReadResult Unreadable(string reason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        return new(GuardianLeaseReadStatus.Unreadable, null, reason);
+    }
+
+    public override string ToString() => $"{Status}: {Reason}";
+}
+
+/// <summary>
+/// Bounded repeater for "the lease is unreadable" warnings. A Guardian poll runs every 2 s, so a
+/// persistent sharing violation or ACL problem would otherwise emit a log line (plus a bounded-log
+/// and diagnostic entry) 30 times a minute. The throttle reports the first failure, every change of
+/// reason, and then at most once per <see cref="RepeatInterval"/>; a successful (or absent) read
+/// clears the state so the next failure is reported immediately. It has no clock of its own: the
+/// caller passes the timestamp, and a clock that jumps backwards only suppresses entries.
+/// </summary>
+public sealed class GuardianLeaseReadWarningThrottle
+{
+    public static readonly TimeSpan DefaultRepeatInterval = TimeSpan.FromSeconds(30);
+
+    private readonly object _sync = new();
+    private string? _reason;
+    private DateTimeOffset _reportedUtc;
+    private bool _faulted;
+
+    public GuardianLeaseReadWarningThrottle(TimeSpan? repeatInterval = null)
+    {
+        var interval = repeatInterval ?? DefaultRepeatInterval;
+        if (interval <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(repeatInterval));
+        RepeatInterval = interval;
+    }
+
+    public TimeSpan RepeatInterval { get; }
+
+    /// <summary>True while an unreadable-lease warning is outstanding.</summary>
+    public bool IsFaulted
+    {
+        get { lock (_sync) return _faulted; }
+    }
+
+    /// <summary>True when the caller must emit the warning now instead of suppressing it.</summary>
+    public bool ShouldReport(string reason, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        lock (_sync)
+        {
+            if (!_faulted)
+            {
+                _faulted = true;
+                _reason = reason;
+                _reportedUtc = now;
+                return true;
+            }
+            if (!string.Equals(_reason, reason, StringComparison.Ordinal))
+            {
+                _reason = reason;
+                _reportedUtc = now;
+                return true;
+            }
+            if (now - _reportedUtc < RepeatInterval)
+                return false;
+            _reportedUtc = now;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Clears the warning state after a readable (or absent) lease. Returns true exactly once per
+    /// fault, so the caller can report the recovery without repeating it on every healthy poll.
+    /// </summary>
+    public bool Clear()
+    {
+        lock (_sync)
+        {
+            if (!_faulted)
+                return false;
+            _faulted = false;
+            _reason = null;
+            return true;
+        }
+    }
 }
 
 public enum GuardianRecoveryAction
@@ -131,11 +274,64 @@ public sealed class GuardianLeaseStore
         if (guard is null)
             throw new IOException("Guardian lease is locked by another process; the control step was not published.");
 
+        WriteRecord(new GuardianLease(processId, controlMode, now, processStartUtc));
+    }
+
+    /// <summary>
+    /// Atomically renews the lease only when the record on disk still belongs to this process
+    /// instance (same PID and process start) and its heartbeat is fresh. The read, the verdict and
+    /// the replacement all run under the cross-process lease lock, so Guardian's
+    /// compare-and-clear is serialised with this renewal: either the renewal lands first and
+    /// Guardian's delete sees a changed record (safe no-op), or the clear lands first and the
+    /// renewal finds no record and returns false.
+    /// <para>
+    /// A missing record, a foreign PID, a different process start and a stale heartbeat all return
+    /// false and never write anything, so a curve write that renews here cannot create or revive
+    /// ownership. A busy lock also returns false (fail closed): ownership cannot be proven, so the
+    /// caller must not touch hardware. No directory is created: no lease directory means no lease
+    /// was ever published.
+    /// </para>
+    /// <para>
+    /// <paramref name="utcNow"/> is invoked by this method, never by the caller: the clock is read
+    /// only after the cross-process lock is held, and that single timestamp is used both for the
+    /// staleness verdict and for the record it publishes. A caller-computed timestamp would be
+    /// taken before a bounded lock wait (up to <see cref="LockTimeout"/>), so a call that queued
+    /// behind another holder could judge a heartbeat fresh with a timestamp that is already stale by
+    /// the time the record lands - publishing an already expired heartbeat. Reading the clock under
+    /// the lock removes that window.
+    /// </para>
+    /// </summary>
+    public bool TryRenewOwnedFresh(
+        int expectedProcessId,
+        DateTimeOffset? expectedProcessStartUtc,
+        string controlMode,
+        Func<DateTimeOffset> utcNow,
+        TimeSpan timeout)
+    {
+        if (string.IsNullOrWhiteSpace(controlMode))
+            throw new ArgumentException("Control mode is required.", nameof(controlMode));
+        ArgumentNullException.ThrowIfNull(utcNow);
+
+        using var guard = TryAcquireLock();
+        if (guard is null)
+            return false;
+        // Only now, with the lock in hand, is the time meaningful for the verdict below.
+        var now = utcNow();
+        if (!GuardianCurveWriteLeasePolicy.CanWrite(ReadCore(), expectedProcessId,
+                expectedProcessStartUtc, now, timeout))
+            return false;
+
+        WriteRecord(new GuardianLease(expectedProcessId, controlMode, now, expectedProcessStartUtc));
+        return true;
+    }
+
+    /// <summary>Replaces the lease file atomically. Caller must hold the lease lock.</summary>
+    private void WriteRecord(GuardianLease record)
+    {
         var temporary = Path + $".{Environment.ProcessId}.tmp";
         try
         {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(
-                new GuardianLease(processId, controlMode, now, processStartUtc), JsonOptions));
+            File.WriteAllText(temporary, JsonSerializer.Serialize(record, JsonOptions));
             File.Move(temporary, Path, true);
         }
         catch
@@ -147,11 +343,80 @@ public sealed class GuardianLeaseStore
 
     /// <summary>
     /// Reads the lease. Deliberately lock-free: replacing the record is an atomic rename, so a
-    /// reader sees either the old or the new record, and a failed read reports "no lease" which the
-    /// recovery coordinator treats as "nothing to recover". Taking the lock here would let a busy
-    /// lock look like a missing lease.
+    /// reader sees either the old or the new record. Kept for callers that only need the record:
+    /// anything but a successful read is reported as null, so the App stays fail-closed. Callers
+    /// that must tell "no lease" from "could not read the lease" use <see cref="ReadResult"/>.
     /// </summary>
     public GuardianLease? Read() => ReadCore();
+
+    /// <summary>
+    /// Reads the lease and reports <i>why</i> it could not be read. "Absent" is decided by opening
+    /// the file and catching FileNotFound/DirectoryNotFound - not by a pre-check such as
+    /// <c>File.Exists</c>, which also returns false for a permission problem and would silently turn
+    /// an unknown owner into "no owner". Every other failure (sharing violation, denied access,
+    /// zero bytes, malformed JSON, a JSON root that is not an object, or an object without a usable
+    /// owner identity) is <see cref="GuardianLeaseReadStatus.Unreadable"/> with a fixed safe reason.
+    /// </summary>
+    public GuardianLeaseReadResult ReadResult()
+    {
+        string text;
+        try
+        {
+            // Opened for read with write+delete sharing, so the atomic replace (and a
+            // compare-and-clear) is never blocked by an in-flight read. A concurrent share-none
+            // holder of the lease file still surfaces as IOException -> Unreadable, never Missing.
+            using var stream = new FileStream(Path, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream, Encoding.UTF8,
+                detectEncodingFromByteOrderMarks: true);
+            text = reader.ReadToEnd();
+        }
+        // No file (or no directory) is the one failure that really means "nothing to recover".
+        catch (FileNotFoundException)
+        {
+            return GuardianLeaseReadResult.Missing;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return GuardianLeaseReadResult.Missing;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.AccessDeniedReason);
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or System.Security.SecurityException)
+        {
+            return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.IoReason);
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+            return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.EmptyReason);
+
+        try
+        {
+            using var document = JsonDocument.Parse(text);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+                return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.NotAnObjectReason);
+
+            var lease = document.RootElement.Deserialize<GuardianLease>(JsonOptions);
+            // An object without a usable owner identity is not a lease: treating it as a record
+            // would let Guardian evaluate - and recover - an owner it cannot identify.
+            if (lease is null || lease.ProcessId <= 0
+                || string.IsNullOrWhiteSpace(lease.ControlMode)
+                || lease.HeartbeatUtc == default)
+                return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.NotALeaseReason);
+
+            return GuardianLeaseReadResult.Success(lease);
+        }
+        catch (JsonException)
+        {
+            return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.InvalidJsonReason);
+        }
+        catch (NotSupportedException)
+        {
+            return GuardianLeaseReadResult.Unreadable(GuardianLeaseReadResult.InvalidJsonReason);
+        }
+    }
 
     public void Clear()
     {
@@ -223,18 +488,14 @@ public sealed class GuardianLeaseStore
         return true;
     }
 
+    /// <summary>
+    /// Fail-closed read used under the lease lock (renewal/clear already treat "no record" as "not
+    /// ours"): only a fully successful read yields a record, everything else yields null.
+    /// </summary>
     private GuardianLease? ReadCore()
     {
-        try
-        {
-            if (!File.Exists(Path))
-                return null;
-            return JsonSerializer.Deserialize<GuardianLease>(File.ReadAllText(Path), JsonOptions);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return null;
-        }
+        var result = ReadResult();
+        return result.Status == GuardianLeaseReadStatus.Success ? result.Lease : null;
     }
 
     /// <summary>

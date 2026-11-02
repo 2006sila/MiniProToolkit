@@ -1,8 +1,10 @@
 # Release Packaging and Lifecycle
 
-> Current binary baseline: the verified mode-fix snapshot, not formal-release readiness. This round changes repository documentation/directory organization only: no source/binary changes, rebuild, republish or installation. These newer repository docs are not in the existing ZIP/Setup or installed copy. A future package containing them must be rebuilt and verified; the existing evidence summaries are not rewritten to pretend a new release occurred.
+> Current state: **no new verified binary snapshot**. The `mode-fix-*` records below are a **historical** verified snapshot: their Core 1088/1088 run, ZIP/Setup hashes and 740-entry manifest describe that snapshot's source/binary only and are superseded for the current tree. This round changes `scripts\package-common.ps1` (ProgramData purge whitelist, required payload list) and repository documentation only: no App/Guardian/installer source logic, rebuild, republish, real publish or installation ran. The current source therefore has no new full-suite Release result and no real publish/install evidence yet - those runs are pending and are not claimed here. These newer repository docs are not in the existing ZIP/Setup or installed copy. A future package containing them must be rebuilt and verified; the existing evidence summaries are not rewritten to pretend a new release occurred.
 
-## Verified binary baseline and evidence boundaries
+## Historical binary baseline (mode-fix snapshot) and evidence boundaries
+
+The `mode-fix-*` records below are historical: they describe that snapshot's source/binary, not the current tree, which includes this round's `package-common.ps1` change and has no matching full-suite/publish/install result yet.
 
 Evidence files below are repository references under `research/evidence/current-validation/`, not shipped links.
 
@@ -19,7 +21,7 @@ Evidence files below are repository references under `research/evidence/current-
 
 One controlled Fan1, one calibration and one display/configuration. Fan2 selection, multi-fan, multi-calibration and multi-display behavior are outside scope. The supported display's DPI, auto-hide and Explorer re-attachment remain target-machine checks. The lite subproduct and its packaging script have been removed; the main project does not depend on them. Network upload/download/today traffic, keyboard backlight and vendor Fn/touchpad are excluded; application Windows hotkeys are not vendor Fn.
 
-Necessary Release gates were executed for the mode-fix binary snapshot above. The newer docs have not been packaged in this documentation-only round. An offline interception fixture alone is not a real Release pass; older release counts are retained only in the historical section.
+Necessary Release gates were executed for the mode-fix binary snapshot (**historical**). For the current tree they are **not** re-executed in this round: the new full-suite Release run, the real publish/inspection chain and the installer build are still pending. The newer docs and this round's `package-common.ps1` change have not been packaged. An offline interception fixture alone is not a real Release pass; older release counts are retained only in the historical section.
 
 ## Test gate and existing interception evidence
 
@@ -47,7 +49,7 @@ A nonzero exit throws before payload deletion. Core green means Core regressions
 | ZIP structure | after archive | `/` separators, ASCII safe relative entries, required paths, exact manifest set |
 | Freshness | before ZIP sidecar | release-relevant source/tests/scripts/shipped docs not newer than run start |
 
-The ZIP implementation uses `ZipFile.CreateFromDirectory` plus separator normalization rather than Windows PowerShell 5.1 `Compress-Archive`. The old ZIP historically had 740/741 entries with backslash separators. The current binary snapshot passed its real publish/inspection gates. The source and binary remain unchanged this round, but a future package containing the newer docs must rerun the complete chain. The offline red-light fixture stops at the first test gate and does not prove later gates ran end-to-end.
+The ZIP implementation uses `ZipFile.CreateFromDirectory` plus separator normalization rather than Windows PowerShell 5.1 `Compress-Archive`. The earlier ZIP's 740/741 entries with backslash separators are a **historical, already superseded** artifact description; neither that record nor the mode-fix ZIP (which passed its own inspection on its own snapshot) describes the current tree. A package of the current tree must rerun the complete chain. The offline red-light fixture stops at the first test gate and does not prove later gates ran end-to-end.
 
 ## Package and installer (commands for later execution)
 
@@ -58,7 +60,38 @@ Requires Windows x64/.NET SDK for publishing and Inno Setup for installer compil
 .\scripts\build-installer.ps1 -Version 0.1.0
 ```
 
-Expected output paths, not a claim of new output:
+Both scripts take path parameters so a payload produced outside `dist\` can still be packaged, and so a dry run can stay in a temporary directory:
+
+- `publish-release.ps1 -OutputRoot <dir>` publishes the payload to `<dir>\MiniProToolkit-x64-v<version>` (`-OutputRoot` defaults to `dist`).
+- `build-installer.ps1 -PayloadRoot <dir>` compiles the installer from that payload directory (default `dist\MiniProToolkit-x64-v<version>`). Pass the same directory `publish-release.ps1` wrote; it must contain `release-manifest.json` for the same `-Version`.
+- `build-installer.ps1 -OutputRoot <dir>` receives the setup executable and its `.sha256` sidecar (default `dist\installer`).
+
+Relative paths are resolved against the repository root, absolute paths are used as given; both are converted to full paths and handed to ISCC as `/DPayloadRoot=<full path>` and `/DInstallerOutput=<full path>`, so the Inno defaults in `installer/MiniProToolkit.iss` only apply when the defines are absent. Spaced paths are accepted. `build-installer.ps1` still accepts `-CompilerPath`.
+
+Isolated acceptance example (repository plus a temporary directory only, no `dist` write):
+
+```powershell
+.\scripts\publish-release.ps1 -Version 0.1.0 -OutputRoot temp\release-dryrun-0.1.0
+.\scripts\build-installer.ps1 -Version 0.1.0 `
+  -PayloadRoot temp\release-dryrun-0.1.0\MiniProToolkit-x64-v0.1.0 `
+  -OutputRoot temp\installer-dryrun-0.1.0
+```
+
+`build-installer.ps1` verifies `release-manifest.json` (version, file list, SHA-256) and then the payload's own `scripts\validate-package.ps1` before ISCC runs. A payload **without** that validator is now a hard failure before ISCC (previously only a warning), matching the payload contract `Assert-PackagePayload` enforces - an unvalidated tree is never compiled into an installer. ISCC writes into a `.staging-<guid>` directory inside the requested output root; the setup executable and its sidecar are moved to the final names only after the compiler exited 0 and produced a non-empty PE file (MZ header checked), and the staging directory is removed on failure. An existing `MiniProToolkit-Setup-x64-v<version>.exe` or `.sha256` in the output root is **never** overwritten or deleted: the script stops before compiling and asks for a different `-OutputRoot`, so a failed run leaves the previous package untouched and a published artifact is only replaced deliberately by the operator.
+
+### Publisher staging and previous-artifact semantics
+
+Current `publish-release.ps1` source text (not a run; no publish was executed this round):
+
+- The payload and its ZIP are built inside `<OutputRoot>\.publish-staging-<transactionId>\` (`payload\`, `package.zip`, `package.zip.building`); an existing staging directory is refused instead of reused, and nothing under the output root is touched before every gate accepts the staged result.
+- The commit only renames same-volume paths: the previous payload, ZIP and `<zip>.sha256` become `<name>.prev-<transactionId>` (**never deleted**), and an already existing `.prev-<transactionId>` aborts the commit before any change.
+- The old sidecar leaves before the new ZIP arrives; after the new ZIP is in place its hash is recomputed and must match the verified staged hash, then the new sidecar is written to `<zip>.sha256.writing-<transactionId>` and renamed, so no stale hash ever describes another ZIP.
+- A failed commit rolls back only artifacts it can prove belong to this transaction; unknown occupants are left in place and the remaining `.prev-*` paths are reported for manual restore.
+- Staging cleanup removes only a directory whose leaf is exactly `.publish-staging-<transactionId>` directly under the output base; anything else is refused rather than deleted recursively.
+
+So a previous payload/ZIP/sidecar is preserved as `.prev-*` instead of "refused when the artifact already exists"; `build-installer.ps1` keeps the stricter never-overwrite rule for the setup executable. No new ZIP, Setup, manifest or hash exists for the current tree.
+
+Expected default output paths, not a claim of new output:
 
 ```text
 dist\MiniProToolkit-x64-v0.1.0\
@@ -68,11 +101,13 @@ dist\installer\MiniProToolkit-Setup-x64-v0.1.0.exe
 dist\installer\MiniProToolkit-Setup-x64-v0.1.0.exe.sha256
 ```
 
-`installer/MiniProToolkit.iss` consumes the versioned self-contained win-x64 payload. `build-installer.ps1` verifies its manifest/hashes before ISCC and accepts `-CompilerPath`. Actual normal install/upgrade/repair/uninstall flows passed on the earlier snapshot, and the mode-fix installer passed same-version upgrade as detailed above; this does not cover failure branches. A repair is requested with `/REPAIR=1`; uninstall does not silently authorize EC recovery.
+This documentation round only records the parameters: no publish run and no ISCC compilation were executed, no installer was generated, and the existing `dist\` artifacts were not modified.
+
+`installer/MiniProToolkit.iss` consumes the versioned self-contained win-x64 payload. Actual normal install/upgrade/repair/uninstall flows passed on the earlier (historical) snapshot, and the mode-fix installer passed same-version upgrade on its own snapshot as detailed above; this does not cover failure branches or the current tree. A repair is requested with `/REPAIR=1`; uninstall does not silently authorize EC recovery.
 
 Payload top-level directories are `App/`, `Guardian/`, `scripts/`, `docs/`, plus `release-manifest.json`. App and Guardian executables are included with lifecycle/validation/recovery scripts.
 
-Shipped document whitelist: `docs/README.md`, `architecture.md`, `phase-3-validation.md`, `phase-4-validation.md`, `phase-5-validation.md`, `fan-calibration.md`, `fan-control-hardening.md`, `history-and-diagnostics.md`, `profile-automation-and-installer.md`, `product-roadmap.md`, `release-packaging.md`, `THIRD-PARTY-NOTICES.md`. The README is copied from the repository root; `docs/` link prefixes are removed. Architecture's `../THIRD-PARTY-NOTICES.md` is rewritten to same-directory `THIRD-PARTY-NOTICES.md`, with assertions and packaged Markdown link checks.
+Shipped document whitelist (publisher `$shippedDocs` plus `architecture.md`): `docs/README.md`, `architecture.md`, `phase-3-validation.md`, `phase-4-validation.md`, `phase-5-validation.md`, `fan-calibration.md`, `fan-control-hardening.md`, `history-and-diagnostics.md`, `performance-review.md`, `profile-automation-and-installer.md`, `product-roadmap.md`, `release-packaging.md`, `THIRD-PARTY-NOTICES.md`. `performance-review.md` ships because `architecture.md` links it; until this round it was copied into the payload but missing from `Assert-PackagePayload`'s required list, so a payload without it could still pass the lifecycle scripts' payload gate. The required payload surface also includes `scripts\validate-package.ps1` (the publisher ships and runs it, and `build-installer.ps1` hard-fails without it); both entries are checked by exact relative path. The README is copied from the repository root; `docs/` link prefixes are removed. Architecture's `../THIRD-PARTY-NOTICES.md` is rewritten to same-directory `THIRD-PARTY-NOTICES.md`, with assertions and packaged Markdown link checks.
 
 `gap-list.md`, `console-product-plan.md` and `LICENSE-DECISION-REQUIRED.md` remain repository-internal, not shipped. Do not introduce packaged-document links to these unshipped md files. Source/evidence paths in backticks are references, not payload links. Third-party notices cover actual dependency outputs, not the main project's license.
 
@@ -105,11 +140,13 @@ Commands below are operator guidance, **not executed here**, and require the app
 
 User configuration under `%LOCALAPPDATA%\MiniProToolkit` is preserved by normal upgrade/uninstall. Optional startup registration is explicit. Active leases block operations unless recovery is explicitly authorized with `-RestoreEcAutomatic`.
 
-`-PurgeUserData` removes user data but ProgramData cleanup is whitelist-only (`guardian.log`, `diagnostic-events.jsonl`), never recursive. Lease, lock and unknown entries are not deleted; active/unknown content blocks removal. An empty leftover lock is expected. Development `uninstall-guardian.ps1` also stops App first and refuses a remaining lease.
+`-PurgeUserData` removes user data but ProgramData cleanup (`Remove-GuardianProgramData`) is whitelist-only and never recursive. The exact-name whitelist follows the writers' rotation: `guardian.log` plus `guardian.log.1`-`.3` (`BoundedTextLog`, 2 MiB + 3 archives) and `diagnostic-events.jsonl` plus `.1`-`.4` (`DiagnosticEventStore`, 2 MiB + 4 archives). Every entry is matched by exact file name (no wildcard/prefix/glob), its resolved parent must still be the program-data root, and a reparse point (junction/symlink) entry - or a linked root directory - aborts the purge instead of being deleted through. The lease, the lease lock file and unknown files/subdirectories are never deleted: an active lease or any unknown entry blocks the whole purge, and only a directory left empty is removed afterwards. An empty leftover lock is expected. The offline fixture `tests\test-package-common-purge.ps1` copies the script into a temporary sandbox and asserts all of this without touching the real `%ProgramData%`. Development `uninstall-guardian.ps1` also stops App first and refuses a remaining lease.
 
 ## Static checks
 
 `check-ps-syntax.ps1` parses/inspects AST and ordering text without executing packaged scripts. Default lifecycle checks, `-All`, `-SkipLifecycleChecks` and `-Path` select scope; exit 0 means checked shapes parse/hold, exit 2 reports violations. Historical 20-script checks and isolated temporary lease/purge helper checks do not prove runtime safety on the installed App/service/real ProgramData/hardware. Documentation is not evidence that a static script ran.
+
+This round the AST gate reports 20 scripts passing (`-All`, exit 0), and `tests\test-package-common-purge.ps1` reports PASSED on its offline fixture: copied script, sandbox `%ProgramData%`, whitelist-only deletion, unknown entry / out-of-range rotation / subdirectory / active-lease refusals, junction-entry and linked-root refusals, and the required-payload gate with and without `docs\performance-review.md` and `scripts\validate-package.ps1`. Both are static/fixture evidence only. A file symbolic link needs elevation (or Developer Mode) on this machine, so that single variant is reported as a skip and the directory-junction cases carry the reparse refusal.
 
 ## Current implementation and validation boundary
 
@@ -172,4 +209,4 @@ The preserved automatic-calibration targeted run is 47/47 passing. `remaining-de
 2. Sleep/resume, elevated logon startup, manual UI/screen-reader/keyboard navigation, single-display DPI/auto-hide/Explorer, OSD/hotkey conflicts, automation and full IPC/cross-user/session/request-id acceptance. The demo CLI pass is not complete live IPC acceptance.
 3. Installer failure rollback, active-lease blocking/recovery and failure branches; actual system audio/brightness setters and sensor accuracy. Normal lifecycle success is not failure-path acceptance.
 4. **No main root LICENSE**: license choice, copyright holder and signing decision remain pending; Setup is NotSigned. Historical lite licensing and third-party notices do not authorize the main project. Do not invent legal/signing facts or change legal files during directory cleanup.
-5. No repackaging now. Before a future release containing these newer docs, rebuild and verify docs/copies/links, gates, manifest, ZIP/Setup and sidecars against that new snapshot.
+5. No repackaging now. Before a future release containing these newer docs, rebuild and verify docs/copies/links, gates, manifest, ZIP/Setup and sidecars against that new snapshot. The current tree's full-suite Release run, real publish/inspection and installer build are pending and are not claimed by this round.

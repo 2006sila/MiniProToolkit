@@ -11,6 +11,8 @@ public partial class DisplaySourceSettingsWindow : Window
     public DisplaySourceSettingsWindow(CpuDisplaySourceSettings settings, string? lhmStatus = null)
     {
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         settings.Validate();
         SourceCombo.SelectedIndex = settings.Source == CpuDisplaySource.LibreHardwareMonitor ? 1 : 0;
         LhmStatusText.Text = string.IsNullOrWhiteSpace(lhmStatus)

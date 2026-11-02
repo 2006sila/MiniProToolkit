@@ -9,6 +9,16 @@
         AllowsTransparency="True"
         SizeToContent="WidthAndHeight"
         Background="Transparent">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」只取基础色板（全部是键控资源，没有隐式控件样式）。
+                     弹窗背景色 / 文字色 / 不透明度 / 字体 / 位置仍由 ApplyStyle 用用户配置（osd.json）在运行时写入，
+                     这里不做任何视觉覆盖；合并字典只是为了让 OSD 走同一套主题资源，而不是另一份硬编码。 -->
+                <ResourceDictionary Source="Themes/Obsidian.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Border x:Name="Container" Background="#D9212121" CornerRadius="12" Padding="24,14" SnapsToDevicePixels="True">
         <Grid>
             <Grid.ColumnDefinitions>

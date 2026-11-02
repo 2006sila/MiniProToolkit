@@ -345,7 +345,7 @@ public sealed class ProfileAutomationProcessConditionTests
     {
         var rule = Rule("gaming", "Performance") with
         {
-            ProcessPath = @"C:\Users\someone\Secret\app.exe",
+            ProcessPath = @"C:\synthetic\someone\Secret\app.exe",
             ProcessCommandLine = "--token=abc123"
         };
         var description = rule.SafeDescription;

@@ -15,6 +15,13 @@ public static class TelemetryHistory
 
     public const int MaximumRecordsPerFile = 250000;
     public const int MaximumRecordsPerLoad = 500000;
+    // Tailing the plain-text application/guardian logs is bounded so a legacy multi-hundred-MB
+    // log cannot spike memory or block the history window. Only complete lines in the tail are
+    // decoded; the original file is never modified.
+    public const int DefaultLogTailBytes = 2 * 1024 * 1024;
+    public const int DefaultLogTailEntries = 2000;
+    private const int MaximumLogTailBytes = 64 * 1024 * 1024;
+    private const int MaximumLogTailEntries = 200000;
     internal static string RecordBudgetWarning(int maximumRecords) =>
         $"达到总扫描 {maximumRecords} 条记录安全预算，本次结果不完整；请缩小时段后重新加载。";
     internal static void ValidateRecordBudget(int maximumRecords)
@@ -146,23 +153,104 @@ public static class TelemetryHistory
         return events;
     }
 
-    public static IReadOnlyList<HistoryEvent> ReadLog(string path, string source, CancellationToken token = default)
+    private sealed record LogTail(List<HistoryEvent> Events, bool Truncated, int MaximumBytes, int MaximumEntries);
+
+    internal static string LogTailTruncationWarning(int maximumBytes, int maximumEntries) =>
+        $"仅加载最近 {Math.Max(1, maximumBytes / 1024)} KiB、最多 {maximumEntries} 条日志，更早内容未加载（原日志文件未被修改）。";
+
+    /// <summary>Bounded tail read used by the history window: newest bytes/entries only.</summary>
+    public static IReadOnlyList<HistoryEvent> ReadLog(string path, string source, CancellationToken token = default) =>
+        ReadLog(path, source, DefaultLogTailBytes, DefaultLogTailEntries, null, token);
+
+    /// <summary>Bounded tail read that reports a truncation warning instead of hiding the cap.</summary>
+    public static IReadOnlyList<HistoryEvent> ReadLog(string path, string source, Action<string>? warning,
+        CancellationToken token = default) =>
+        ReadLog(path, source, DefaultLogTailBytes, DefaultLogTailEntries, warning, token);
+
+    /// <summary>Explicitly bounded tail read; <paramref name="warning"/> receives a truncation notice when capped.</summary>
+    public static IReadOnlyList<HistoryEvent> ReadLog(string path, string source, int maximumBytes,
+        int maximumEntries, Action<string>? warning = null, CancellationToken token = default)
     {
-        if (!File.Exists(path)) return [];
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var reader = new StreamReader(stream);
+        var tail = ReadLogTail(path, source, maximumBytes, maximumEntries, token);
+        if (tail.Truncated) warning?.Invoke(LogTailTruncationWarning(tail.MaximumBytes, tail.MaximumEntries));
+        return tail.Events;
+    }
+
+    /// <summary>Explicitly bounded tail read that returns the truncation flag to the caller.</summary>
+    public static IReadOnlyList<HistoryEvent> ReadLog(string path, string source, int maximumBytes,
+        int maximumEntries, out bool truncated, CancellationToken token = default)
+    {
+        var tail = ReadLogTail(path, source, maximumBytes, maximumEntries, token);
+        truncated = tail.Truncated;
+        return tail.Events;
+    }
+
+    private static LogTail ReadLogTail(string path, string source, int maximumBytes, int maximumEntries,
+        CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (maximumBytes is < 1 or > MaximumLogTailBytes)
+            throw new ArgumentOutOfRangeException(nameof(maximumBytes));
+        if (maximumEntries is < 1 or > MaximumLogTailEntries)
+            throw new ArgumentOutOfRangeException(nameof(maximumEntries));
         var events = new List<HistoryEvent>();
-        while (reader.ReadLine() is { } line)
+        if (!File.Exists(path)) return new(events, false, maximumBytes, maximumEntries);
+        token.ThrowIfCancellationRequested();
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        // Snapshot length: bytes appended after this point are outside the bound and never read.
+        var initialLength = stream.Length;
+        if (initialLength <= 0) return new(events, false, maximumBytes, maximumEntries);
+        var start = Math.Max(0L, initialLength - maximumBytes);
+        var byteCount = (int)Math.Min(initialLength - start, maximumBytes);
+        var buffer = new byte[byteCount];
+        // A non-zero tail only drops a first line when the byte before the window is not a
+        // newline, i.e. the window really starts in the middle of a line. When the window
+        // starts exactly on a line boundary the complete line is kept.
+        var startsMidLine = false;
+        if (start > 0)
         {
             token.ThrowIfCancellationRequested();
+            stream.Position = start - 1;
+            startsMidLine = stream.ReadByte() != '\n';
+        }
+        stream.Position = start;
+        var read = 0;
+        while (read < byteCount)
+        {
+            token.ThrowIfCancellationRequested();
+            var count = stream.Read(buffer, read, byteCount - read);
+            if (count == 0) break;
+            read += count;
+        }
+        var truncated = start > 0;
+        using var reader = new StreamReader(new MemoryStream(buffer, 0, read, writable: false),
+            new UTF8Encoding(false), detectEncodingFromByteOrderMarks: start == 0);
+        // The first line of a non-zero tail is probably cut mid-line: only complete lines count.
+        if (startsMidLine) reader.ReadLine();
+        var scanned = 0;
+        while (reader.ReadLine() is { } line)
+        {
+            if ((scanned++ & 255) == 0) token.ThrowIfCancellationRequested();
             var separator = line.IndexOf(' ');
-            if (separator > 0 && DateTimeOffset.TryParse(line[..separator], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var time))
+            if (separator <= 0) continue;
+            if (!DateTimeOffset.TryParse(line[..separator], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var time))
+                continue;
+            var message = line[(separator + 1)..];
+            events.Add(new(time, Classify(message), message, source));
+            // Trim in chunks so a dense tail stays O(n) instead of shifting per line.
+            if (events.Count > maximumEntries * 2)
             {
-                var message = line[(separator + 1)..];
-                events.Add(new(time, Classify(message), message, source));
+                events.RemoveRange(0, events.Count - maximumEntries);
+                truncated = true;
             }
         }
-        return events;
+        if (events.Count > maximumEntries)
+        {
+            events.RemoveRange(0, events.Count - maximumEntries);
+            truncated = true;
+        }
+        token.ThrowIfCancellationRequested();
+        return new(events, truncated, maximumBytes, maximumEntries);
     }
 
     public static HistoryEventKind Classify(string text)

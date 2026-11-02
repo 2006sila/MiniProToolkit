@@ -56,7 +56,7 @@ public sealed class ToolkitCommandSingleInstanceTests
         // machine must see the lock as held instead of starting a second hardware-controlling instance.
         Assert.StartsWith(@"Global\", ToolkitSingleInstanceLock.MutexName);
         Assert.DoesNotContain(@"Local\", ToolkitSingleInstanceLock.MutexName);
-        Assert.DoesNotContain("\\Users\\", ToolkitSingleInstanceLock.MutexName);
+        Assert.DoesNotContain("Users", ToolkitSingleInstanceLock.MutexName);
         Assert.DoesNotContain(":", ToolkitSingleInstanceLock.MutexName);
         // Fixed name: no user or session discriminator may sneak in (that would make it per user again).
         Assert.DoesNotContain(Environment.UserName, ToolkitSingleInstanceLock.MutexName);

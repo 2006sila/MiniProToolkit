@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -5,14 +6,18 @@ using System.Text.Json;
 namespace MiniProToolkit.Core;
 
 public sealed record TelemetryFileStamp(long Length, long MtimeTicks, long CreationTicks, string Edges);
+// The summary fields (Minimum/Maximum/Count/Trusted) are what let Load skip a file without
+// reading it, so they are bound to the stamp by SummaryIntegrity. This is corruption
+// detection, not an authorization mechanism: a deliberate editor can recompute the digest.
 public sealed record TelemetryFileIndexEntry(string Path, TelemetryFileStamp Stamp,
-    DateTimeOffset? Minimum, DateTimeOffset? Maximum, int Count, bool Trusted);
+    DateTimeOffset? Minimum, DateTimeOffset? Maximum, int Count, bool Trusted, string SummaryIntegrity);
 public sealed record TelemetryFileIndexDocument(int Version, IReadOnlyList<TelemetryFileIndexEntry> Entries);
 
 /// <summary>Only fixed local recorder files are indexed; failures always fall back to scanning.</summary>
 public sealed class TelemetryFileIndex(string directory)
 {
     public const int MaximumFiles = 64;
+    public const int CurrentVersion = 2;
     private readonly string _directory = Path.GetFullPath(directory);
     public string SidecarPath => Path.Combine(_directory, "telemetry-index.v1.json");
     public int LastSkippedFiles { get; private set; }
@@ -112,7 +117,7 @@ public sealed class TelemetryFileIndex(string directory)
             if (!trusted && (before is null || after is null || before != after))
                 warnings.Add($"{Path.GetFileName(path)}：文件变化或无法确认稳定快照，本次结果不保证完整，索引不可信；下次将重新扫描。");
             if (after is not null)
-                entries.Add(new(path, after, scan.Records.Count == 0 ? null : scan.Records.Min(r => r.Timestamp),
+                entries.Add(CreateEntry(path, after, scan.Records.Count == 0 ? null : scan.Records.Min(r => r.Timestamp),
                     scan.Records.Count == 0 ? null : scan.Records.Max(r => r.Timestamp), scan.Records.Count, trusted));
         }
     }
@@ -125,7 +130,10 @@ public sealed class TelemetryFileIndex(string directory)
             if ((File.GetAttributes(SidecarPath) & FileAttributes.ReparsePoint) != 0 || new FileInfo(SidecarPath).Length > 512 * 1024)
                 throw new InvalidDataException("索引过大或为链接");
             var doc = JsonSerializer.Deserialize<TelemetryFileIndexDocument>(File.ReadAllText(SidecarPath), Options);
-            if (doc is null || doc.Version != 1 || doc.Entries is null || doc.Entries.Count > MaximumFiles ||
+            // An older sidecar is only a disposable cache: reject it (warning + rescan) and let
+            // WriteCache atomically replace it. History files are never touched.
+            if (doc is { Version: 1 }) throw new InvalidDataException("索引版本 1 已停用，本次不使用旧缓存");
+            if (doc is null || doc.Version != CurrentVersion || doc.Entries is null || doc.Entries.Count > MaximumFiles ||
                 doc.Entries.Any(e => !ValidEntry(e)) ||
                 doc.Entries.Select(e => e.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != doc.Entries.Count)
                 throw new InvalidDataException("索引版本或条目无效");
@@ -141,16 +149,42 @@ public sealed class TelemetryFileIndex(string directory)
             stamp.MtimeTicks < DateTime.MinValue.Ticks || stamp.MtimeTicks > DateTime.MaxValue.Ticks ||
             stamp.CreationTicks < DateTime.MinValue.Ticks || stamp.CreationTicks > DateTime.MaxValue.Ticks ||
             stamp.Edges is null || stamp.Edges.Length != 64 || !stamp.Edges.All(Uri.IsHexDigit) ||
+            entry.SummaryIntegrity is null || entry.SummaryIntegrity.Length != 64 || !entry.SummaryIntegrity.All(Uri.IsHexDigit) ||
             entry.Count < 0 || entry.Count > TelemetryHistory.MaximumRecordsPerFile || entry.Minimum > entry.Maximum ||
             (entry.Count > 0 && (entry.Minimum is null || entry.Maximum is null)) ||
             (entry.Count == 0 && (entry.Minimum is not null || entry.Maximum is not null)) ||
             string.IsNullOrWhiteSpace(entry.Path) || !Path.IsPathFullyQualified(entry.Path)) return false;
+        // Recompute from the stored summary fields: an accidental or partial edit of
+        // Minimum/Maximum/Count/Trusted without a matching digest invalidates the cache.
+        if (!string.Equals(entry.SummaryIntegrity, ComputeSummaryIntegrity(entry), StringComparison.Ordinal)) return false;
         var canonical = Path.GetFullPath(entry.Path);
         return string.Equals(canonical, entry.Path, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(Path.GetDirectoryName(canonical), _directory, StringComparison.OrdinalIgnoreCase) &&
             (Path.GetFileName(canonical) == "telemetry.jsonl" ||
              (Path.GetFileName(canonical).StartsWith("telemetry.jsonl.", StringComparison.Ordinal) &&
               TelemetryMaintenance.TryArchiveNumber(Path.GetFileName(canonical), out _)));
+    }
+
+    private static TelemetryFileIndexEntry CreateEntry(string path, TelemetryFileStamp stamp,
+        DateTimeOffset? minimum, DateTimeOffset? maximum, int count, bool trusted)
+    {
+        var entry = new TelemetryFileIndexEntry(path, stamp, minimum, maximum, count, trusted, string.Empty);
+        return entry with { SummaryIntegrity = ComputeSummaryIntegrity(entry) };
+    }
+
+    /// <summary>Deterministic SHA-256 over the edge hash and the cached summary fields.</summary>
+    public static string ComputeSummaryIntegrity(TelemetryFileIndexEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        if (entry.Stamp is null) throw new ArgumentException("Stamp is required.", nameof(entry));
+        var canonical = string.Join('\n',
+            "telemetry-index-summary-v2",
+            entry.Stamp.Edges ?? string.Empty,
+            entry.Minimum?.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture) ?? "null",
+            entry.Maximum?.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture) ?? "null",
+            entry.Count.ToString(CultureInfo.InvariantCulture),
+            entry.Trusted ? "trusted" : "untrusted");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
     }
 
     private void WriteCache(IReadOnlyList<TelemetryFileIndexEntry> entries, List<string> warnings)
@@ -164,7 +198,7 @@ public sealed class TelemetryFileIndex(string directory)
                 if (!TelemetryMaintenance.IsSafeDirectory(_directory) ||
                     (File.Exists(SidecarPath) && (File.GetAttributes(SidecarPath) & FileAttributes.ReparsePoint) != 0))
                     throw new IOException("索引路径是链接");
-                File.WriteAllText(temp, JsonSerializer.Serialize(new TelemetryFileIndexDocument(1, entries), Options), Encoding.UTF8);
+                File.WriteAllText(temp, JsonSerializer.Serialize(new TelemetryFileIndexDocument(CurrentVersion, entries), Options), Encoding.UTF8);
                 File.Move(temp, SidecarPath, true);
             }
         }

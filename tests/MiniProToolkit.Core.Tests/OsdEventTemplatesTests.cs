@@ -196,7 +196,7 @@ public sealed class OsdEventTemplatesTests
     {
         var clean = OsdEventTemplates.Sanitize("osd-command", new(
             "\u0000\u202E标题 password=super-secret", false,
-            "C:\\Users\\private\\secret.txt\n\t", OsdIcon.None, 2));
+            "C:\\synthetic\\private\\secret.txt\n\t", OsdIcon.None, 2));
         Assert.DoesNotContain("super-secret", clean.Title!);
         Assert.DoesNotContain("private", clean.AdditionalText!);
         Assert.DoesNotContain('\u202E', clean.Title!);

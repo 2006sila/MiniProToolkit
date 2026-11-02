@@ -55,6 +55,21 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     private FanCalibration _calibration;
     private readonly TaskbarDisplaySettingsStore _taskbarSettingsStore = new();
     private TaskbarDisplaySettings _taskbarSettings;
+    // Desktop floating status card: its own settings file (floating-status.json), its own lifetime
+    // and off by default. It is deliberately *not* part of _taskbarWindows, so taskbar settings,
+    // saves, recreates and shell restarts never show/hide/replace it.
+    private readonly FloatingStatusSettingsStore _floatingSettingsStore = new();
+    private FloatingStatusSettings _floatingSettings = FloatingStatusSettings.Default;
+    private FloatingStatusWindow? _floatingStatusWindow;
+    // The floating settings dialog while it is open, so a live drag of the card can update the
+    // position the dialog will save (and restore when cancelled).
+    private FloatingStatusSettingsWindow? _floatingSettingsDialog;
+    // Float-only runtime safety override of the mouse click-through ("关闭悬浮窗鼠标穿透"). Unlike the
+    // card's own instance flag it exists even while no card is on screen, so a tray/hotkey click with
+    // the card disabled still protects every card created afterwards. Set before the disk write of an
+    // emergency disable and only cleared by a successful explicit settings save. The taskbar strip has
+    // no equivalent state and is never read or written from here.
+    private bool _floatingClickThroughSafetyOverride;
     // Configurable global hotkeys (whitelisted gestures, rebindable in the taskbar settings dialog).
     private readonly HotkeySettingsStore _hotkeySettingsStore = new();
     private HotkeySettings _hotkeySettings = HotkeySettings.Default;
@@ -86,10 +101,48 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     // Taskbar overlay refresh bookkeeping (interval gate for the periodic pass, coalescing for
     // the shell/display events). Pure state, so it is unit-tested in MiniProToolkit.Core.Tests.
     private readonly TaskbarRefreshScheduler _taskbarRefresh = new();
+    // Taskbar *discovery* (EnumWindows) has its own monotonic gate. The 1 Hz pass used to
+    // re-enumerate every top-level window each tick just to find out that nothing changed; now it
+    // only enumerates on the first pass, as soon as a mounted overlay window died, or every
+    // 30 s as a safety net, while shell/display notifications still enumerate immediately (see
+    // EnsureTaskbars/RunTaskbarRefresh). Same tested scheduler type, no new Core type.
+    private readonly TaskbarRefreshScheduler _taskbarDiscovery = new();
+    private static readonly TimeSpan TaskbarDiscoveryInterval = TimeSpan.FromSeconds(30);
     private readonly TelemetryRecorder _telemetry = new();
     private readonly DiagnosticEventStore _diagnosticEvents = new();
     private readonly Queue<HardwareTelemetryRecord> _recentTelemetry = new();
+    // Trend chart shapes are created once per canvas and afterwards only have their points and
+    // guide coordinates replaced. _telemetryChartDirty remembers a redraw that was skipped
+    // because the window was hidden/minimized, so the chart is repainted from the bounded
+    // in-memory history as soon as it is visible again.
+    private bool _telemetryChartShapesReady;
+    private bool _telemetryChartDirty;
+    private System.Windows.Shapes.Line[] _telemetryChartGuides = [];
+    private System.Windows.Shapes.Polyline? _telemetryChartTemperature;
+    private System.Windows.Shapes.Polyline? _telemetryChartRpm;
+    private System.Windows.Shapes.Polyline? _telemetryChartTargetRpm;
+    private System.Windows.Shapes.Polyline? _telemetryChartDuty;
+    private System.Windows.Shapes.Polyline? _telemetryChartPower;
     private readonly List<TaskbarStatusWindow> _taskbarWindows = [];
+    // Live-preview override of the persisted taskbar on/off switch while the taskbar settings
+    // dialog is open: null means "follow _taskbarSettings.Enabled", a value is the previewed switch
+    // the dialog shows but has not saved yet. It only decides whether the strip is created,
+    // refreshed or closed; it is never written to taskbar.json and never touches sampling, fan
+    // control or the floating card. Reset to null as soon as the dialog closes.
+    private bool? _taskbarPreviewEnabled;
+    // The full live-preview buffer of the open taskbar settings dialog (colours, font, items,
+    // layout, nudge and the on/off switch). A strip created between two sampling passes - the
+    // dialog's own enable preview, an Explorer restart, the 30 s discovery or a display change -
+    // must take this buffer instead of the persisted _taskbarSettings, otherwise the overlay that
+    // is created during the preview jumps back to the saved colours/layout until the next tick.
+    // null means "no preview"; it is set before _taskbarPreviewEnabled and cleared whenever the
+    // dialog closes, a save is accepted or a failed save reverted the preview.
+    private TaskbarDisplaySettings? _taskbarPreviewSettings;
+    // The single open taskbar settings dialog. WPF ShowDialog disables only the main window while
+    // its nested dispatcher loop keeps the taskbar overlays' context menus clickable, so that menu
+    // entry has to find this instance instead of building a second editor that would fight over
+    // the same preview buffer and the same persisted switch.
+    private TaskbarSettingsWindow? _taskbarSettingsDialog;
     private readonly Forms.NotifyIcon _trayIcon;
     private readonly OsdWindow _osd;
     private EventWaitHandle? _shutdownSignal;
@@ -330,6 +383,7 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             _profiles.Add(profile);
         _automationSettings = _automationStore.LoadOrDefault(_profiles.Select(p => p.Name).ToArray(), out var automationWarning);
         _taskbarSettings = _taskbarSettingsStore.LoadOrDefault(out var taskbarWarning);
+        _floatingSettings = _floatingSettingsStore.LoadOrDefault(out var floatingWarning);
         _hotkeySettings = _hotkeySettingsStore.LoadOrDefault(out var hotkeyWarning);
         _displaySourceSettings = _displaySourceStore.LoadOrDefault(out var displaySourceWarning);
         _displaySourceWarning = displaySourceWarning;
@@ -359,6 +413,11 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         // Theme and user appearance are UI/presentation only and loaded from the same file;
         // demo mode uses them too.
         ApplyOsdAppearance();
+        // Durable, independent of the taskbar toggle: an enabled floating card is created and shown
+        // right away (the first sampling pass fills it), a disabled one is never created. There is no
+        // overview checkbox any more - Enabled is only ever edited in the sidebar settings dialog.
+        if (_floatingSettings.Enabled)
+            ApplyFloatingSettings(_floatingSettings);
         _trayIcon = CreateTrayIcon();
         // Control and telemetry cadence is independent of taskbar settings.
         _timer.Interval = FixedRpmControlSession.ControlInterval;
@@ -366,7 +425,15 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         ProfileCombo.SelectedIndex = Math.Max(0, _profiles.Select((profile, index) => (profile, index))
             .FirstOrDefault(item => item.profile.Name == "自定义").index);
         StateChanged += OnStateChanged;
+        // Subscribed once: a restore repaints the trend chart that the hidden/minimized passes
+        // deliberately skipped, and OnClosing makes the handler inert.
+        IsVisibleChanged += OnChartVisibilityChanged;
         SourceInitialized += (_, _) => RegisterHotkeys();
+        // 纯展示：深色原生标题栏 + 首屏工作区适配。与上面的热键注册互相独立，
+        // 任何失败都只影响外观（见 MainWindow.Presentation.cs）。
+        SourceInitialized += (_, _) => ApplyObsidianPresentation();
+        // 纯展示：窗口变窄时切回可水平滚动（不涉及任何控制状态）。
+        SizeChanged += (_, _) => UpdateContentScrollMode();
         CurveConfigText.Text = configWarning is null
             ? $"配置: {_curveConfigStore.Path}"
             : $"配置警告: {configWarning}";
@@ -377,6 +444,8 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             AppLog.Write(profileWarning);
         if (taskbarWarning is not null)
             AppLog.Write(taskbarWarning);
+        if (floatingWarning is not null)
+            AppLog.Write(floatingWarning);
         if (hotkeyWarning is not null)
             AppLog.Write(hotkeyWarning);
         if (displaySourceWarning is not null)
@@ -597,38 +666,62 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                    (_recentTelemetry.Count > 1 && state.snapshot.Timestamp - _recentTelemetry.Peek().Timestamp > TimeSpan.FromMinutes(2)))
                 _recentTelemetry.Dequeue();
             UpdateTelemetryChart();
-            try
-            {
-                _telemetry.Append(telemetryRecord);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Write("telemetry append failed", ex);
-            }
+            // The Guardian verdict already came back with this pass's background work: reuse it
+            // instead of querying the service control manager again on the UI thread every tick.
+            // The explicit checks (startup, click paths) still query for themselves.
             if (!_demo)
-                UpdateGuardianStatus();
+                UpdateGuardianStatus(state.guardianRunning);
             SnapshotCount++;
             UpdateTrayStatus(state.snapshot, state.guardianRunning);
-            if (TaskbarToggle.IsChecked == true &&
+            if (TaskbarStripEnabled &&
                 _taskbarRefresh.TryAcquireInterval(
                     System.Diagnostics.Stopwatch.GetTimestamp(),
                     System.Diagnostics.Stopwatch.Frequency,
                     TimeSpan.FromSeconds(_taskbarSettings.RefreshIntervalSeconds)))
             {
-                EnsureTaskbars();
+                var taskbarTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                if (ShouldRediscoverTaskbars(taskbarTimestamp, System.Diagnostics.Stopwatch.Frequency))
+                    EnsureTaskbars();
                 foreach (var taskbar in _taskbarWindows)
                 {
                     taskbar.TryAttachToTaskbar();
-                    var safeManual = !_demo && state.snapshot.Error is null && state.snapshot.FanFault is null &&
-                        state.snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault && !_restoreRequired &&
-                        _curveController?.RecoveryRequired != true && _hardware?.IsEmergencyFullSpeed != true &&
-                        _curveController?.IsEnabled != true;
-                    var safeRpmOrCurve = safeManual && state.snapshot.CpuTemperatureC is < 90 &&
-                        state.snapshot.FanFault is null && state.snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault;
+                    var (safeManual, safeRpmOrCurve) = ComputeTaskbarFanGates(state.snapshot);
                     taskbar.UpdateSnapshot(state.snapshot, state.guardianRunning, safeManual, safeRpmOrCurve,
                         !_demo && state.snapshot.Error is null);
                 }
             }
+            // The desktop floating card consumes the same completed sample pass, outside the
+            // taskbar toggle and its refresh interval: its own Enabled state decides whether it
+            // exists. The gate values below are the same ones the taskbar strip receives (there they
+            // only enable menu actions; the card exposes no control action). No hardware read, no
+            // EC/fan write and no extra sampling tick is added here.
+            if (_floatingStatusWindow is { } floatingCard)
+            {
+                var cardSafeManual = !_demo && state.snapshot.Error is null && state.snapshot.FanFault is null &&
+                    state.snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault && !_restoreRequired &&
+                    _curveController?.RecoveryRequired != true && _hardware?.IsEmergencyFullSpeed != true &&
+                    _curveController?.IsEnabled != true;
+                var cardSafeRpmOrCurve = cardSafeManual && state.snapshot.CpuTemperatureC is < 90 &&
+                    state.snapshot.FanFault is null && state.snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault;
+                floatingCard.UpdateSnapshot(state.snapshot, state.guardianRunning, cardSafeManual, cardSafeRpmOrCurve,
+                    !_demo && state.snapshot.Error is null);
+            }
+            // The telemetry write is disk I/O, so it runs off the UI thread - but inside the same
+            // gate and awaited before this pass returns: records stay ordered, no record is lost,
+            // and the exit sequence (which waits for this gate) still sees the last record
+            // written. It is the last step of the pass, so a slow disk delays only the next
+            // sample and never the frame the user is looking at.
+            await Task.Run(() =>
+            {
+                try
+                {
+                    _telemetry.Append(telemetryRecord);
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Write("telemetry append failed", ex);
+                }
+            });
             return true;
         }
         catch (Exception ex)
@@ -650,86 +743,148 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             UpdateTelemetryChart();
     }
 
+    /// <summary>
+    /// Repaints the trend chart from the bounded in-memory history (at most 120 records / 2
+    /// minutes, unchanged). The three guide lines and the five polylines are created once and
+    /// afterwards only get new coordinates/points: the previous version cleared the canvas and
+    /// built eight fresh shapes every second, which was the main UI cost of the live view.
+    /// While the window is hidden or minimized nothing is built at all - the redraw is only
+    /// remembered and replayed from the same queue as soon as the chart is visible again.
+    /// </summary>
     private void UpdateTelemetryChart()
     {
-        if (TelemetryChart is null || TelemetryChart.ActualWidth <= 1 || TelemetryChart.ActualHeight <= 1)
+        if (TelemetryChart is null)
+            return;
+        if (!IsVisible || WindowState == WindowState.Minimized)
+        {
+            _telemetryChartDirty = true;
+            return;
+        }
+        if (TelemetryChart.ActualWidth <= 1 || TelemetryChart.ActualHeight <= 1)
             return;
 
         var width = TelemetryChart.ActualWidth;
         var height = TelemetryChart.ActualHeight;
-        TelemetryChart.Children.Clear();
-        AddChartGuide(0.0, height * 0.25, width);
-        AddChartGuide(0.0, height * 0.5, width);
-        AddChartGuide(0.0, height * 0.75, width);
+        EnsureTelemetryChartShapes();
+        _telemetryChartDirty = false;
+        // Guides sit at 25/50/75 % of the canvas height and span the full width.
+        for (var index = 0; index < _telemetryChartGuides.Length; index++)
+        {
+            var guide = _telemetryChartGuides[index];
+            var y = height * (0.25 * (index + 1));
+            guide.X1 = 0.0;
+            guide.X2 = width;
+            guide.Y1 = y;
+            guide.Y2 = y;
+        }
 
-        var temperature = new System.Windows.Shapes.Polyline
-        {
-            Stroke = MediaBrushes.OrangeRed,
-            StrokeThickness = 2,
-            Points = new System.Windows.Media.PointCollection()
-        };
-        var rpm = new System.Windows.Shapes.Polyline
-        {
-            Stroke = MediaBrushes.SteelBlue,
-            StrokeThickness = 2,
-            Points = new System.Windows.Media.PointCollection()
-        };
-        var targetRpm = new System.Windows.Shapes.Polyline
-        {
-            Stroke = MediaBrushes.MediumPurple,
-            StrokeThickness = 1,
-            StrokeDashArray = [3, 2],
-            Points = new System.Windows.Media.PointCollection()
-        };
-        var duty = new System.Windows.Shapes.Polyline
-        {
-            Stroke = MediaBrushes.ForestGreen,
-            StrokeThickness = 1,
-            StrokeDashArray = [1, 2],
-            Points = new System.Windows.Media.PointCollection()
-        };
-        var power = new System.Windows.Shapes.Polyline
-        {
-            Stroke = MediaBrushes.DarkViolet,
-            StrokeThickness = 1.5,
-            StrokeDashArray = [4, 2],
-            Points = new System.Windows.Media.PointCollection()
-        };
         var records = _recentTelemetry.ToArray();
+        // Detached collections: filling them raises no WPF invalidation yet, so replacing the
+        // three/five shapes costs one visual update per line instead of one per point.
+        var temperature = new PointCollection(records.Length);
+        var rpm = new PointCollection(records.Length);
+        var targetRpm = new PointCollection(records.Length);
+        var duty = new PointCollection(records.Length);
+        var power = new PointCollection(records.Length);
         for (var index = 0; index < records.Length; index++)
         {
             var x = records.Length == 0 ? 0 : width * (1 - Math.Clamp(
                 (records[^1].Timestamp - records[index].Timestamp).TotalSeconds / 120.0, 0, 1));
             if (records[index].EffectiveDisplayCpuTemperatureC is { } temp)
-                temperature.Points.Add(new WpfPoint(x, height - Normalize(temp, 30, 100) * height));
+                temperature.Add(new WpfPoint(x, height - Normalize(temp, 30, 100) * height));
             if (records[index].Fan1Rpm is { } fan)
-                rpm.Points.Add(new WpfPoint(x, height - Normalize(fan, 0, 4500) * height));
+                rpm.Add(new WpfPoint(x, height - Normalize(fan, 0, 4500) * height));
             if (records[index].TargetRpm is { } target)
-                targetRpm.Points.Add(new WpfPoint(x, height - Normalize(target, 0, 4500) * height));
+                targetRpm.Add(new WpfPoint(x, height - Normalize(target, 0, 4500) * height));
             if (records[index].TargetDuty is { } targetDuty)
-                duty.Points.Add(new WpfPoint(x, height - Normalize(targetDuty, 0, 100) * height));
+                duty.Add(new WpfPoint(x, height - Normalize(targetDuty, 0, 100) * height));
             if (records[index].EffectiveDisplayCpuPackagePowerWatts is { } watts)
-                power.Points.Add(new WpfPoint(x, height - Normalize(watts, 0, 80) * height));
+                power.Add(new WpfPoint(x, height - Normalize(watts, 0, 80) * height));
         }
-        TelemetryChart.Children.Add(temperature);
-        TelemetryChart.Children.Add(rpm);
-        TelemetryChart.Children.Add(targetRpm);
-        TelemetryChart.Children.Add(duty);
-        TelemetryChart.Children.Add(power);
+        ReplaceChartPoints(_telemetryChartTemperature, temperature);
+        ReplaceChartPoints(_telemetryChartRpm, rpm);
+        ReplaceChartPoints(_telemetryChartTargetRpm, targetRpm);
+        ReplaceChartPoints(_telemetryChartDuty, duty);
+        ReplaceChartPoints(_telemetryChartPower, power);
     }
 
-    private void AddChartGuide(double x, double y, double width)
+    /// <summary>
+    /// Creates the reusable shape set exactly once per canvas and keeps the original z-order
+    /// (guides first, then temperature/RPM/target RPM/duty/power).
+    /// </summary>
+    private void EnsureTelemetryChartShapes()
     {
-        TelemetryChart.Children.Add(new System.Windows.Shapes.Line
+        if (_telemetryChartShapesReady || TelemetryChart is null)
+            return;
+        TelemetryChart.Children.Clear();
+        _telemetryChartGuides = [CreateChartGuide(), CreateChartGuide(), CreateChartGuide()];
+        foreach (var guide in _telemetryChartGuides)
+            TelemetryChart.Children.Add(guide);
+        _telemetryChartTemperature = CreateChartPolyline(
+            "ObsidianChartTemperatureBrush", System.Windows.Media.Color.FromRgb(0x66, 0xDE, 0xC4), 2, []);
+        _telemetryChartRpm = CreateChartPolyline(
+            "ObsidianChartRpmBrush", System.Windows.Media.Color.FromRgb(0x7F, 0xA7, 0xFF), 2, []);
+        _telemetryChartTargetRpm = CreateChartPolyline(
+            "ObsidianChartTargetRpmBrush", System.Windows.Media.Color.FromRgb(0x5E, 0x77, 0x91), 1, [3, 2]);
+        _telemetryChartDuty = CreateChartPolyline(
+            "ObsidianChartDutyBrush", System.Windows.Media.Color.FromRgb(0xC7, 0x92, 0xEA), 1, [1, 2]);
+        _telemetryChartPower = CreateChartPolyline(
+            "ObsidianChartPowerBrush", System.Windows.Media.Color.FromRgb(0xF0, 0xA8, 0x68), 1.5, [4, 2]);
+        TelemetryChart.Children.Add(_telemetryChartTemperature);
+        TelemetryChart.Children.Add(_telemetryChartRpm);
+        TelemetryChart.Children.Add(_telemetryChartTargetRpm);
+        TelemetryChart.Children.Add(_telemetryChartDuty);
+        TelemetryChart.Children.Add(_telemetryChartPower);
+        _telemetryChartShapesReady = true;
+    }
+
+    private System.Windows.Shapes.Line CreateChartGuide() => new()
+    {
+        X1 = 0,
+        Stroke = ObsidianBrush("ObsidianChartGuideBrush", System.Windows.Media.Color.FromRgb(0x1B, 0x26, 0x34)),
+        StrokeThickness = 1,
+        StrokeDashArray = new DoubleCollection([2, 3])
+    };
+
+    private System.Windows.Shapes.Polyline CreateChartPolyline(
+        string brushKey, System.Windows.Media.Color fallback, double thickness, double[] dash)
+    {
+        var polyline = new System.Windows.Shapes.Polyline
         {
-            X1 = x,
-            X2 = width,
-            Y1 = y,
-            Y2 = y,
-            Stroke = MediaBrushes.LightGray,
-            StrokeThickness = 1,
-            StrokeDashArray = [2, 3]
-        });
+            Stroke = ObsidianBrush(brushKey, fallback),
+            StrokeThickness = thickness,
+            Points = new PointCollection()
+        };
+        if (dash.Length > 0)
+            polyline.StrokeDashArray = new DoubleCollection(dash);
+        return polyline;
+    }
+
+    /// <summary>
+    /// Replaces a polyline's points with a frozen collection: the assignment is a single property
+    /// change for WPF instead of one invalidation per added point.
+    /// </summary>
+    private static void ReplaceChartPoints(System.Windows.Shapes.Polyline? polyline, PointCollection points)
+    {
+        if (polyline is null)
+            return;
+        if (points.CanFreeze)
+            points.Freeze();
+        polyline.Points = points;
+    }
+
+    /// <summary>
+    /// Restore path for the trend chart: a hidden/minimized window skipped the redraws, so replay
+    /// one from the bounded history the moment the chart becomes visible again. Subscribed once in
+    /// the constructor and inert while the window is closing.
+    /// </summary>
+    private void OnChartVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            return;
+        if (e.NewValue is not true || !_telemetryChartDirty)
+            return;
+        UpdateTelemetryChart();
     }
 
     private static double Normalize(double value, double minimum, double maximum) =>
@@ -773,11 +928,11 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         if (snapshot.FanFault is not null)
         {
             StatusText.Text = $"风扇保护：{snapshot.FanFault}{(snapshot.Error is null ? "" : $" · 硬件读取失败：{snapshot.Error}")}";
-            StatusText.Foreground = System.Windows.Media.Brushes.DarkOrange;
+            StatusText.Foreground = ObsidianBrush("ObsidianWarningBrush", System.Windows.Media.Color.FromRgb(0xED, 0xBA, 0x68));
         }
         else
         {
-            StatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            StatusText.Foreground = ObsidianBrush("ObsidianTextSecondaryBrush", System.Windows.Media.Color.FromRgb(0x98, 0xAB, 0xC0));
         }
         ModeText.Text = $"模式: {mode}";
         UsageText.Text = $"CPU 占用: {snapshot.CpuUsagePercent?.ToString() ?? "--"}%";
@@ -794,6 +949,8 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             ? $"CPU 类别频率（只读）: {DemoMetricsText}"
             : $"CPU 类别频率（只读）: {HardwareTelemetryRecord.FormatCpuClassFrequency(snapshot.CpuClassFrequency)}";
         UpdateDisplaySourceStatus();
+        // 纯展示：大字号温度/指标卡与性能模式选中态，只读上面同一份 snapshot。
+        UpdateDashboardPresentation(snapshot);
     }
 
     private static string FormatTemperature(double? celsius, bool oneDecimal) =>
@@ -821,12 +978,10 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             text = $"{_displaySourceWarning} · {text}";
         DisplaySourceStatusText.Text = text;
         DisplaySourceStatusText.Foreground = fallback is not null || _displaySourceWarning is not null
-            ? System.Windows.Media.Brushes.DarkOrange
-            : System.Windows.Media.Brushes.Gray;
-        if (TrendLegendText is not null)
-            TrendLegendText.Text = "实时趋势（最近 2 分钟；温度/封装功耗曲线按主显示源：" +
-                CpuDisplaySourceSelector.DescribeSource(source) +
-                "）  温度 ━  实际 RPM ━  目标 RPM - -  duty · ·  CPU 封装功耗 - -";
+            ? ObsidianBrush("ObsidianWarningBrush", System.Windows.Media.Color.FromRgb(0xED, 0xBA, 0x68))
+            : ObsidianBrush("ObsidianTextSecondaryBrush", System.Windows.Media.Color.FromRgb(0x98, 0xAB, 0xC0));
+        // 同样的文案，只把每个图例换成与曲线一致的 Run 颜色。
+        SetTrendLegend(CpuDisplaySourceSelector.DescribeSource(source));
     }
 
     private static string FormatPower(double? watts) =>
@@ -1252,15 +1407,23 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         RecordDiagnosticEvent("Guardian 恢复：EC 自动已生效");
     }
 
-    private void UpdateGuardianStatus()
+    /// <summary>
+    /// No-argument form: queries the service control manager itself (startup, and any path that
+    /// has to re-check before trusting a cached verdict). The periodic pass calls the overload
+    /// below with the verdict its background work already returned, so the 1 Hz pass no longer
+    /// repeats an SCM query on the UI thread. Nothing about the safety reaction changed: the same
+    /// "Guardian stopped -> disable the curve and restore EC automatic" branch still runs.
+    /// </summary>
+    private void UpdateGuardianStatus() => UpdateGuardianStatus(GuardianAvailability.IsRunning());
+
+    private void UpdateGuardianStatus(bool running)
     {
-        var running = GuardianAvailability.IsRunning();
         GuardianStatusText.Text = running
             ? "Guardian: Running · 手动控制异常可恢复 EC 自动"
             : "Guardian: 未运行 · 无法启用曲线、固定 RPM 或满速";
         GuardianStatusText.Foreground = running
-            ? System.Windows.Media.Brushes.DarkGreen
-            : System.Windows.Media.Brushes.DarkOrange;
+            ? ObsidianBrush("ObsidianAccentBrush", System.Windows.Media.Color.FromRgb(0x66, 0xDE, 0xC4))
+            : ObsidianBrush("ObsidianWarningBrush", System.Windows.Media.Color.FromRgb(0xED, 0xBA, 0x68));
         if (!running && _curveController?.IsEnabled == true)
         {
             SetCurveToggle(false);
@@ -1268,8 +1431,51 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         }
     }
 
+    /// <summary>
+    /// Whether the taskbar strip should exist right now: the persisted switch
+    /// (<see cref="TaskbarDisplaySettings.Enabled"/>) unless the open settings dialog is previewing
+    /// a different value. Only lifecycle work (create/refresh/close) reads this; telemetry, fan
+    /// control and the floating card never do.
+    /// </summary>
+    private bool TaskbarStripEnabled => _taskbarPreviewEnabled ?? _taskbarSettings.Enabled;
+
+    /// <summary>
+    /// Cheap per-tick verdict: re-enumerate the taskbars only when it can matter - no overlay
+    /// window exists yet (first pass / after a close), a mounted window's native taskbar handle
+    /// died, or the 30 s monotonic safety net fired (which also discovers a taskbar the app never
+    /// saw). Every other tick only refreshes the windows it already owns, so the 1 Hz pass no
+    /// longer walks all top-level windows. Shell/display notifications still enumerate at once.
+    /// </summary>
+    private bool ShouldRediscoverTaskbars(long timestamp, long frequency) =>
+        _taskbarWindows.Count == 0 ||
+        _taskbarWindows.Any(window => !window.IsNativeWindowAlive) ||
+        _taskbarDiscovery.TryAcquireInterval(timestamp, frequency, TaskbarDiscoveryInterval);
+
+    /// <summary>
+    /// The one control-gating tuple the taskbar strip receives. The periodic sampling pass and an
+    /// overlay created between two passes (enable preview, Explorer restart, 30 s discovery,
+    /// display change) both call this, so a freshly created strip is painted with exactly the
+    /// same gate values and can be filled from the newest kept sample instead of waiting up to
+    /// one user refresh interval (1..10 s) for the next pass. Pure reads of runtime state only:
+    /// no hardware read, no EC/fan write, no lease decision and no extra sampling tick.
+    /// </summary>
+    private (bool SafeManual, bool SafeRpmOrCurve) ComputeTaskbarFanGates(HardwareSnapshot snapshot)
+    {
+        var safeManual = !_demo && snapshot.Error is null && snapshot.FanFault is null &&
+            snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault && !_restoreRequired &&
+            _curveController?.RecoveryRequired != true && _hardware?.IsEmergencyFullSpeed != true &&
+            _curveController?.IsEnabled != true;
+        var safeRpmOrCurve = safeManual && snapshot.CpuTemperatureC is < 90 &&
+            snapshot.FanFault is null && snapshot.RpmFeedbackState != FanRpmFeedbackState.Fault;
+        return (safeManual, safeRpmOrCurve);
+    }
+
     private void EnsureTaskbars()
     {
+        // Nothing may be created while the main window is tearing down: the exit sequence closes
+        // the strips in its UI phase, and a late preview/refresh callback must not resurrect one.
+        if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            return;
         var handles = NativeMethods.EnumerateTaskbars().ToArray();
         foreach (var stale in _taskbarWindows.Where(window =>
                      !window.IsNativeWindowAlive || !handles.Contains(window.TaskbarHandle)).ToArray())
@@ -1282,7 +1488,12 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         {
             if (_taskbarWindows.Any(window => window.TaskbarHandle == handle && window.IsNativeWindowAlive))
                 continue;
-            var window = new TaskbarStatusWindow(_taskbarSettings, handle);
+            // A strip created between two sampling passes must take the display settings the open
+            // dialog is currently previewing (if any); using the persisted settings here made a
+            // previewed colour/layout revert on any overlay created by Explorer/display/settings
+            // events. The constructor runs Validate and ApplyLayout, so the preview is applied
+            // before the window is shown.
+            var window = new TaskbarStatusWindow(_taskbarPreviewSettings ?? _taskbarSettings, handle);
             _taskbarWindows.Add(window);
             window.OpenRequested += ShowMainWindow;
             window.RestoreRequested += async () => await RestoreAutomaticAsync();
@@ -1296,10 +1507,425 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             window.ExitRequested += RequestExit;
             window.Closed += (_, _) => _taskbarWindows.Remove(window);
             window.Show();
+            // Paint the newest kept sample in the same turn. UpdateSnapshot only renders while the
+            // window is visible, so this runs after Show(); it stores the sample plus the gate flags
+            // and never touches hardware or starts a sampling pass. The next periodic pass (or the
+            // next refresh interval) simply overwrites it with a fresher sample. Without this a
+            // strip created by an enable preview or an Explorer rebuild could stay blank/stale for
+            // up to one refresh interval (1..10 s).
+            if (_latestSnapshot is { } snapshot)
+            {
+                var (safeManual, safeRpmOrCurve) = ComputeTaskbarFanGates(snapshot);
+                window.UpdateSnapshot(snapshot, _demo || _lastGuardianRunning, safeManual, safeRpmOrCurve,
+                    !_demo && snapshot.Error is null);
+            }
         }
+        // Every path that really enumerated (first pass, 30 s fallback, shell restart, settings
+        // save/preview) records the discovery time, so the next periodic tick does not repeat the
+        // same top-level window walk. A throwing enumeration is not recorded and stays retryable.
+        _taskbarDiscovery.MarkRefreshed(System.Diagnostics.Stopwatch.GetTimestamp());
     }
 
     private void OpenTaskbarSettingsFromMenu() => TaskbarSettingsClick(this, new RoutedEventArgs());
+
+    // ---------------------------------------------------------------------------------------------
+    // Desktop floating status card (independent of the taskbar strip)
+    //
+    // The card is created only while the user enables it, is never added to _taskbarWindows, does
+    // not enumerate/mount appbars and is not touched by the taskbar settings dialog, its save path
+    // or a shell restart. Everything below is display-only: the same snapshot, the same formatter
+    // and the same layout plan. No hardware read, no EC/fan write, no Guardian/lease decision.
+    // ---------------------------------------------------------------------------------------------
+
+    /// <summary>Creates the card once and wires its menu to the existing main-window entry points.</summary>
+    private FloatingStatusWindow CreateFloatingWindow()
+    {
+        var window = new FloatingStatusWindow(_floatingSettings);
+        _floatingStatusWindow = window;
+        // A card created after an emergency disable that could not be persisted must be interactive
+        // from its first frame: the owner override is applied right after construction, before any
+        // Show()/UpdateDisplaySettings route can re-apply an old stored ClickThrough=true.
+        window.SetClickThroughSafetyOverride(_floatingClickThroughSafetyOverride);
+        window.OpenRequested += ShowMainWindow;
+        window.SettingsRequested += OpenFloatingSettingsFromMenu;
+        window.HideRequested += HideFloatingWindow;
+        window.ExitRequested += RequestExit;
+        window.LockRequested += locked => SaveFloatingFlags(
+            (_floatingStatusWindow?.Settings ?? _floatingSettings) with { IsLocked = locked });
+        window.TopmostRequested += topmost => SaveFloatingFlags(
+            (_floatingStatusWindow?.Settings ?? _floatingSettings) with { Topmost = topmost });
+        window.PositionChanged += OnFloatingPositionChanged;
+        window.ClickThroughDisableRequested += DisableFloatingClickThrough;
+        window.ResetPositionRequested += ResetFloatingPosition;
+        window.Closed += (_, _) => _floatingStatusWindow = null;
+        // The card can be created by a live preview while its own dialog is already open; it must
+        // know that the dialog is the single editor from the first right click.
+        window.SetSettingsEditing(_floatingSettingsDialog is not null);
+        AppLog.Write("floating status card created");
+        return window;
+    }
+
+    /// <summary>
+    /// Applies one settings instance to the card, creating it when it is enabled and updating the
+    /// existing instance (or hiding it) when it is not. No disk write, no taskbar touch.
+    /// </summary>
+    private void ApplyFloatingSettings(FloatingStatusSettings settings)
+    {
+        // Once the main window is tearing down (`_closing`), nothing may create or show the card
+        // again: the settings dialog's cancel path pushes the opened settings back through here, and
+        // rebuilding the card after its teardown step would leave an orphan window.
+        if (_closing) return;
+        if (!settings.Enabled)
+        {
+            _floatingStatusWindow?.UpdateDisplaySettings(settings);
+            ReassertFloatingClickThroughSafetyOverride();
+            return;
+        }
+        (_floatingStatusWindow ?? CreateFloatingWindow()).UpdateDisplaySettings(settings);
+        ReassertFloatingClickThroughSafetyOverride();
+    }
+
+    /// <summary>
+    /// Re-applies the float-only safety override after every preview/apply. The display update applies
+    /// the *previewed* <c>ClickThrough</c> value, which can be <c>true</c> while a settings dialog edits
+    /// or while an emergency disable could not be persisted, so the override has to win again after it
+    /// (never before). It is never cleared here - only a successful explicit save ends it.
+    /// </summary>
+    private void ReassertFloatingClickThroughSafetyOverride()
+    {
+        if (_floatingClickThroughSafetyOverride)
+            _floatingStatusWindow?.SetClickThroughSafetyOverride(true);
+    }
+
+    /// <summary>
+    /// A drag of the card finished (the card already clamped the position into the work area).
+    /// Without an open dialog the position is persisted right away, so a dragged position survives a
+    /// restart even if nothing else is saved; while the dialog is open it owns the value (保存 writes
+    /// it, 取消 restores the opened position).
+    /// </summary>
+    private void OnFloatingPositionChanged(FloatingStatusSettings settings)
+    {
+        if (_floatingSettingsDialog is { } dialog)
+        {
+            dialog.UpdatePosition(settings);
+            return;
+        }
+        SaveFloatingFlags(settings);
+    }
+
+    /// <summary>
+    /// Live preview from the floating settings dialog. The dialog owns the position fields (a live
+    /// drag updates them through <see cref="FloatingStatusSettingsWindow.UpdatePosition"/>), so
+    /// cancelling pushes the opened position back and nothing unsaved stays on screen. A failed
+    /// preview is logged and never closes the dialog.
+    /// </summary>
+    private void PreviewFloatingSettings(FloatingStatusSettings settings)
+    {
+        // No rebuild while the main window is exiting (see ApplyFloatingSettings).
+        if (_closing) return;
+        try
+        {
+            ApplyFloatingSettings(settings);
+            // Keep the dialog above the card when the previewed Topmost value changes: a topmost card
+            // would otherwise sit in front of its own settings window.
+            if (_floatingSettingsDialog is { } dialog && dialog.Topmost != settings.Topmost)
+                dialog.Topmost = settings.Topmost;
+        }
+        catch (Exception ex) { AppLog.Write("floating status settings preview failed", ex); }
+    }
+
+    private void OpenFloatingSettingsFromMenu() => FloatingSettingsClick(this, new RoutedEventArgs());
+
+    /// <summary>
+    /// Independent settings entry (the sidebar 悬浮窗 button and the card's own right-click menu).
+    /// The dialog is non-modal and exists once at a time: while it is open, every entry point brings
+    /// that instance forward (restoring it from minimized) instead of returning silently or opening a
+    /// second editor. It is non-modal so the card stays draggable, and it has no owner on purpose so
+    /// hiding the main window to the tray does not hide the editor; teardown closes it explicitly.
+    /// Only 保存 writes floating-status.json, synchronously, through <see cref="SaveFloatingSettingsFromDialog"/>:
+    /// a failed write keeps the dialog open with all edits and the live preview, so a retry succeeds.
+    /// The taskbar settings are never touched.
+    /// </summary>
+    private void FloatingSettingsClick(object sender, RoutedEventArgs e)
+    {
+        if (_closing) return;
+        if (_floatingSettingsDialog is { } open)
+        {
+            ActivateFloatingSettings(open);
+            return;
+        }
+        var current = _floatingStatusWindow?.Settings ?? _floatingSettings;
+        var editor = new FloatingStatusSettingsWindow(current, PreviewFloatingSettings, SaveFloatingSettingsFromDialog);
+        // A topmost card must not cover its own settings dialog.
+        editor.Topmost = current.Topmost;
+        _floatingSettingsDialog = editor;
+        SetFloatingEditingState(editing: true);
+        editor.Closed += (_, _) =>
+        {
+            // The write already happened (or the user cancelled through the dialog's restore path),
+            // so the closed event never saves a second time.
+            _floatingSettingsDialog = null;
+            SetFloatingEditingState(editing: false);
+        };
+        editor.Show();
+        ActivateFloatingSettings(editor);
+    }
+
+    private static void ActivateFloatingSettings(Window editor)
+    {
+        if (editor.WindowState == WindowState.Minimized)
+            editor.WindowState = WindowState.Normal;
+        if (!editor.IsVisible) editor.Show();
+        editor.Activate();
+    }
+
+    /// <summary>
+    /// Publishes "the settings dialog is the single editor" to the other floating entry points, so the
+    /// card's lock/topmost/hide menu entries are visibly disabled with an explanation instead of a
+    /// click that silently does nothing. Restored when the dialog closes. The 启用 switch itself now
+    /// lives only inside that dialog, so there is no second owner-side checkbox to disable.
+    /// </summary>
+    private void SetFloatingEditingState(bool editing)
+    {
+        _floatingStatusWindow?.SetSettingsEditing(editing);
+    }
+
+    /// <summary>
+    /// Synchronous save for the dialog. A string return means "not written" and is shown in the
+    /// dialog, which stays open so the user can retry; <c>null</c> means the file was written and the
+    /// settings were adopted. The previous saved settings are never overwritten in memory on failure,
+    /// and the live preview is deliberately left on screen but marked unsaved by the dialog.
+    /// </summary>
+    private string? SaveFloatingSettingsFromDialog(FloatingStatusSettings settings)
+    {
+        if (_closing) return "程序正在退出，本次改动未保存。";
+        try
+        {
+            _floatingSettingsStore.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status settings save failed", ex);
+            return ex.GetBaseException().Message;
+        }
+        _floatingSettings = settings;
+        // A successful save is the user's explicit decision - ClickThrough included - so the float-only
+        // safety override ends here. The owner flag is cleared *before* the apply call, otherwise
+        // ApplyFloatingSettings would re-assert it from its still-set owner state.
+        _floatingClickThroughSafetyOverride = false;
+        ApplyFloatingSettings(settings);
+        // An explicitly saved ClickThrough=true is the user opting in again: the card's instance
+        // override is cleared so the newly committed value really takes effect.
+        _floatingStatusWindow?.SetClickThroughSafetyOverride(false);
+        AppLog.Write("floating status settings saved");
+        return null;
+    }
+
+    /// <summary>
+    /// Context-menu lock/topmost toggle from the card. Persisted with the card's current (possibly
+    /// dragged) position; a failed write leaves the card unchanged.
+    /// </summary>
+    private void SaveFloatingFlags(FloatingStatusSettings settings)
+    {
+        // While the settings dialog is open it is the single editor: a menu toggle would otherwise
+        // write a value the dialog's cancel path could not restore. The menu entries are disabled in
+        // that state, so this is the second line of defence, not the user-visible one.
+        if (_closing || _floatingSettingsDialog is not null) return;
+        var live = _floatingStatusWindow?.Settings;
+        if (live is not null)
+            settings = settings with
+            {
+                MonitorDeviceName = live.MonitorDeviceName,
+                LeftDip = live.LeftDip,
+                TopDip = live.TopDip
+            };
+        try
+        {
+            _floatingSettingsStore.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status flag save failed", ex);
+            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
+                "保存桌面悬浮窗设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        _floatingSettings = settings;
+        _floatingStatusWindow?.UpdateDisplaySettings(settings);
+    }
+
+    /// <summary>
+    /// "隐藏悬浮窗" from the card menu (and the card's Alt+F4 close translation): the same durable
+    /// Enabled=false the settings dialog's 启用 switch writes. While the settings dialog is open it is
+    /// the single editor, so the request brings that dialog forward instead of being dropped silently.
+    /// </summary>
+    private void HideFloatingWindow()
+    {
+        if (_closing) return;
+        if (_floatingSettingsDialog is { } dialog)
+        {
+            ActivateFloatingSettings(dialog);
+            return;
+        }
+        var live = _floatingStatusWindow?.Settings ?? _floatingSettings;
+        var updated = live with { Enabled = false };
+        try
+        {
+            _floatingSettingsStore.Save(updated);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status hide save failed", ex);
+            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
+                "保存桌面悬浮窗设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        _floatingSettings = updated;
+        ApplyFloatingSettings(updated);
+    }
+
+    /// <summary>
+    /// Unified quick show/hide entry (tray menu, global hotkey). Without an open dialog the new
+    /// <c>Enabled</c> value is persisted first and only applied after a successful write, so a failed
+    /// write never leaves an unsaved card on screen. While the settings dialog is open it is the single
+    /// editor: the request only flips (and previews) its 启用 checkbox, writes nothing, and the caller
+    /// says so - a quick action must never be silently dropped.
+    /// </summary>
+    private void ToggleFloatingStatus()
+    {
+        if (_closing) return;
+        if (_floatingSettingsDialog is { } dialog)
+        {
+            var enabled = dialog.TogglePreviewVisibility();
+            ShowOsd(enabled
+                ? "桌面悬浮窗设置编辑中：已预览显示，保存后保留"
+                : "桌面悬浮窗设置编辑中：已预览隐藏，保存后保留");
+            return;
+        }
+        var live = _floatingStatusWindow?.Settings ?? _floatingSettings;
+        var updated = live with { Enabled = !live.Enabled };
+        try
+        {
+            _floatingSettingsStore.Save(updated);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status toggle save failed", ex);
+            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
+                "保存桌面悬浮窗设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        _floatingSettings = updated;
+        ApplyFloatingSettings(updated);
+        ShowOsd(updated.Enabled ? "桌面悬浮窗已显示" : "桌面悬浮窗已隐藏");
+    }
+
+    /// <summary>
+    /// External "disable mouse click-through" (tray menu, global hotkey, main-window button and the
+    /// card's own menu). Every one of those entry points works without the card receiving any mouse
+    /// input, which is the whole point: a fully click-through card cannot be clicked.
+    /// <para>
+    /// The order is deliberate. The owner remembers the runtime safety override <em>first</em> - even
+    /// when no card exists, so a card created later inherits it - and the card stops its actual
+    /// click-through before any disk write, so a failed write can never leave a card the user is
+    /// unable to click. Only then is the flag persisted, and only the flag: the *saved* settings
+    /// instance is written, never the settings dialog's edit buffer, so no unsaved edit is persisted
+    /// behind the editor's back. The geometry is taken from the live card, because the last drag may
+    /// be newer than the file (its own save can have failed) and an older stored Left/Top must not be
+    /// written back. When the dialog is open its checkbox and its cancel baseline are patched as well,
+    /// so a later preview or 取消 cannot turn the click-through back on. If the write fails the override
+    /// stays until the user explicitly saves (or a successful save carries the flag), and both the
+    /// message and the log say that the next start may restore the old setting.
+    /// </para>
+    /// </summary>
+    private void DisableFloatingClickThrough()
+    {
+        if (_closing) return;
+        var dialog = _floatingSettingsDialog;
+        // 1. Make the card clickable in this session first - even if step 2 fails. The owner flag is
+        // what a not-yet-existing card inherits, so it is set before the write and before any window
+        // call.
+        _floatingClickThroughSafetyOverride = true;
+        _floatingStatusWindow?.SetClickThroughSafetyOverride(true);
+        dialog?.ApplyClickThroughRecovery();
+        // 2. Persist only ClickThrough=false of the saved settings, carrying the live card's geometry.
+        var live = _floatingStatusWindow?.Settings ?? _floatingSettings;
+        var updated = FloatingStatusInteraction.WithoutClickThrough(_floatingSettings) with
+        {
+            MonitorDeviceName = live.MonitorDeviceName,
+            LeftDip = live.LeftDip,
+            TopDip = live.TopDip
+        };
+        try
+        {
+            _floatingSettingsStore.Save(updated);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status click-through disable save failed", ex);
+            // The override intentionally stays set: the file still holds ClickThrough=true, so the
+            // session (and any card created from here on) must stay interactive until an explicit
+            // successful save. Re-assert it on the live card as well.
+            _floatingStatusWindow?.SetClickThroughSafetyOverride(true);
+            ShowOsd("本次已恢复交互，但未能保存：下次启动可能恢复原设置");
+            System.Windows.MessageBox.Show(this,
+                "本次已恢复交互，未能保存，下次启动可能恢复原设置。" + Environment.NewLine + ex.GetBaseException().Message,
+                "关闭悬浮窗鼠标穿透", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        _floatingSettings = updated;
+        // The file now holds ClickThrough=false, so the runtime override is no longer needed - for this
+        // card and for every card created later.
+        _floatingClickThroughSafetyOverride = false;
+        _floatingStatusWindow?.SetClickThroughSafetyOverride(false);
+        // Without an open dialog the live card is the saved instance, so the persisted value can be
+        // applied directly. With a dialog open its preview buffer must stay untouched (it was patched
+        // by ApplyClickThroughRecovery above).
+        if (dialog is null)
+            _floatingStatusWindow?.UpdateDisplaySettings(updated);
+        ShowOsd("已关闭悬浮窗鼠标穿透，可以直接点击悬浮窗了");
+    }
+
+    /// <summary>
+    /// "恢复默认位置" (tray menu, global hotkey, card menu). While the settings dialog is open the
+    /// request is delegated to that editor's own reset: it previews only, 保存 keeps it and 取消
+    /// restores the opened position, so no other unsaved edit is written behind the editor's back.
+    /// Without a dialog exactly the three position fields of the live card (or of the saved settings
+    /// when no card exists) are cleared and persisted - colours, items, size, lock, topmost,
+    /// click-through and Enabled are untouched, and a disabled card is *not* force-enabled: it uses the
+    /// default corner the next time it is shown.
+    /// </summary>
+    private void ResetFloatingPosition()
+    {
+        if (_closing) return;
+        if (_floatingSettingsDialog is { } dialog)
+        {
+            dialog.ResetPosition();
+            ActivateFloatingSettings(dialog);
+            ShowOsd("桌面悬浮窗设置编辑中：已预览恢复默认位置，保存后保留");
+            return;
+        }
+        var live = _floatingStatusWindow?.Settings ?? _floatingSettings;
+        // The live card is the base so every other current value (including a lock/topmost the menu
+        // has just applied) survives; only the three position fields are cleared.
+        var updated = FloatingStatusInteraction.WithoutPosition(live);
+        try
+        {
+            _floatingSettingsStore.Save(updated);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write("floating status position reset save failed", ex);
+            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
+                "保存桌面悬浮窗设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        _floatingSettings = updated;
+        ApplyFloatingSettings(updated);
+        ShowOsd("已恢复悬浮窗默认位置");
+    }
+
+    private void CloseFloatingClickThroughClick(object sender, RoutedEventArgs e) => DisableFloatingClickThrough();
 
     /// <summary>
     /// Queues one event-driven taskbar refresh (shell re-created, display/DPI/taskbar setting
@@ -1328,10 +1954,24 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     }
 
     /// <summary>
-    /// Runs the queued refresh on the UI thread. Only the taskbar windows are touched:
-    /// a shell restart re-enumerates and re-mounts them (old taskbar handles are closed),
-    /// everything else just repositions the existing windows. No snapshot is read and no
-    /// EC/fan call is made, so this path cannot write hardware.
+    /// True when the notification can change *which* taskbars exist, so the overlay windows have to
+    /// be re-enumerated: a shell restart, a monitor layout change (a second screen can arrive with
+    /// its own taskbar) and a taskbar move/resize/auto-hide/multi-monitor setting. A DPI change
+    /// keeps the same taskbars and only needs repositioning. Deliberately local to the App layer:
+    /// <see cref="TaskbarRefreshPolicy.RemountsTaskbarWindows"/> keeps its narrower "the existing
+    /// windows are dead" meaning for callers that need that distinction.
+    /// </summary>
+    private static bool RediscoversTaskbars(TaskbarRefreshTrigger trigger) =>
+        trigger is TaskbarRefreshTrigger.ShellRecreated
+            or TaskbarRefreshTrigger.DisplayChanged
+            or TaskbarRefreshTrigger.TaskbarSettingChanged;
+
+    /// <summary>
+    /// Runs the queued refresh on the UI thread. Only the taskbar windows are touched: a shell
+    /// restart, a display/monitor change and a taskbar setting change re-enumerate the taskbars
+    /// (the old handles are closed and the new ones mounted), a DPI change only repositions the
+    /// windows it already owns. No snapshot is read and no EC/fan call is made, so this path cannot
+    /// write hardware.
     /// </summary>
     private void RunTaskbarRefresh(TaskbarRefreshTrigger trigger)
     {
@@ -1339,13 +1979,24 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         {
             if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
                 return;
-            if (TaskbarToggle.IsChecked != true)
+            // The floating card is not attached to the shell, so a display/DPI/taskbar change only
+            // needs its work area re-clamped; a shell restart (ShellRecreated) leaves it untouched.
+            // This runs before the taskbar toggle check because the card is independent of it.
+            if (trigger != TaskbarRefreshTrigger.ShellRecreated)
+            {
+                try { _floatingStatusWindow?.EnsureOnVisibleMonitor(); }
+                catch (Exception clampEx) { AppLog.Write($"floating status clamp after {trigger} failed", clampEx); }
+            }
+            if (!TaskbarStripEnabled)
                 return;
             // Claim the interval slot so the next periodic pass does not repeat the work; the
             // event itself is allowed to bypass the interval (that is the point of the event).
             _taskbarRefresh.MarkRefreshed(System.Diagnostics.Stopwatch.GetTimestamp());
             AppLog.Write($"taskbar refresh: {trigger}");
-            if (TaskbarRefreshPolicy.RemountsTaskbarWindows(trigger))
+            // Shell restart, display change or taskbar setting change: find the taskbars that
+            // exist *now* instead of waiting for the 30 s periodic safety net, so a second screen
+            // with its own taskbar is served immediately. DpiChanged keeps the same handles.
+            if (RediscoversTaskbars(trigger))
                 EnsureTaskbars();
             foreach (var taskbar in _taskbarWindows.ToArray())
                 taskbar.TryAttachToTaskbar();
@@ -1600,41 +2251,153 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         }
     }
 
+    /// <summary>
+    /// Live preview for the taskbar settings dialog. It pushes the edit buffer to the overlays and
+    /// also follows the dialog's own on/off switch: disabled closes the existing strip, enabled
+    /// creates it through the normal <see cref="EnsureTaskbars"/> path when none exists. The values
+    /// are applied right after creation, so a new strip takes the edit buffer rather than the saved
+    /// settings. Nothing is written to disk and neither <c>_taskbarSettings</c> nor the overlay set
+    /// is persisted, so 取消 restores the opened state through the same callback and a save keeps
+    /// the single existing persist-and-recreate path. A failure is logged here because a preview
+    /// must never disturb the dialog; the value is validated before it is sent any further.
+    /// </summary>
+    private void PreviewTaskbarSettings(TaskbarDisplaySettings settings)
+    {
+        // Nothing may be created while the main window is tearing down; the cancel path of the
+        // dialog still reaches this method after `_closing` was set.
+        if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            return;
+        // The full buffer is published before the switch and before any window is created or
+        // updated: EnsureTaskbars reads it for every overlay it mounts while the dialog is open.
+        _taskbarPreviewSettings = settings;
+        _taskbarPreviewEnabled = settings.Enabled;
+        if (!settings.Enabled)
+        {
+            foreach (var window in _taskbarWindows.ToArray())
+            {
+                try { window.Close(); }
+                catch (Exception ex) { AppLog.Write("taskbar settings preview close failed", ex); }
+            }
+            _taskbarWindows.Clear();
+            return;
+        }
+        if (_taskbarWindows.Count == 0)
+        {
+            try { EnsureTaskbars(); }
+            catch (Exception ex) { AppLog.Write("taskbar settings preview create failed", ex); }
+        }
+        foreach (var window in _taskbarWindows.ToArray())
+        {
+            try { window.UpdateDisplaySettings(settings); }
+            catch (Exception ex) { AppLog.Write("taskbar settings preview failed", ex); }
+        }
+    }
+
     private void TaskbarSettingsClick(object sender, RoutedEventArgs e)
     {
-        var editor = new TaskbarSettingsWindow(_taskbarSettings, _hotkeySettings) { Owner = this };
-        if (editor.ShowDialog() != true || editor.Result is not { } settings || editor.HotkeyResult is not { } hotkeys)
+        // Nothing may open another editor while the main window tears down. The taskbar overlay's
+        // context menu can still be clicked inside the modal loop below (ShowDialog disables only
+        // the main window), which is exactly how a second, conflicting editor used to be created.
+        if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
             return;
+        if (_taskbarSettingsDialog is { } openEditor)
+        {
+            // The single editor already exists: focus it and leave its buffers untouched. During its
+            // save/failure notice it is closed but still owns the field, so a menu click from the
+            // pumped message loop is a no-op instead of a second dialog.
+            if (openEditor.IsVisible)
+                openEditor.Activate();
+            return;
+        }
+        var editor = new TaskbarSettingsWindow(_taskbarSettings, _hotkeySettings, PreviewTaskbarSettings) { Owner = this };
+        // Published before ShowDialog so a click that arrives from the overlay menu inside the modal
+        // dispatcher loop finds this instance instead of building a second editor. The finally below
+        // (or the exit sequence during teardown) clears it for this exact instance only.
+        _taskbarSettingsDialog = editor;
         try
         {
-            _taskbarSettingsStore.Save(settings);
-            _taskbarSettings = settings;
-            _taskbarRefresh.ResetInterval();
-            foreach (var window in _taskbarWindows.ToArray())
-                window.Close();
-            _taskbarWindows.Clear();
-            if (TaskbarToggle.IsChecked == true)
-                EnsureTaskbars();
-            AppLog.Write("taskbar settings saved");
+            var accepted = editor.ShowDialog();
+            // The dialog may have created/closed the strip for an unsaved preview. Once it is closed
+            // the preview buffer and the switch override are dropped; the persisted settings
+            // (restored by its cancel path) are the only source of truth again.
+            _taskbarPreviewEnabled = null;
+            _taskbarPreviewSettings = null;
+            // An exit that started inside the modal loop lets the rest of this handler run after the
+            // dialog closed; nothing may be saved or created at that point.
+            if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return;
+            if (accepted != true || editor.Result is not { } settings || editor.HotkeyResult is not { } hotkeys)
+                return;
+            try
+            {
+                _taskbarSettingsStore.Save(settings);
+                _taskbarSettings = settings;
+                _taskbarRefresh.ResetInterval();
+                foreach (var window in _taskbarWindows.ToArray())
+                    window.Close();
+                _taskbarWindows.Clear();
+                // The saved on/off switch decides whether the strip is recreated; a disabled taskbar
+                // stays gone while telemetry and fan control keep running on their own cadence.
+                if (settings.Enabled)
+                    EnsureTaskbars();
+                AppLog.Write("taskbar settings saved");
+            }
+            catch (Exception ex)
+            {
+                // The dialog already closed itself with DialogResult = true, so OnClosed does not roll
+                // back and the overlays still show the unsaved preview. _taskbarSettings is only
+                // assigned after the file write succeeded, so it still holds the settings that are on
+                // disk: pushing it back is the only restore needed. This runs in its own try/catch
+                // because a failed restore must not hide the save failure the user has to see.
+                try
+                {
+                    PreviewTaskbarSettings(_taskbarSettings);
+                    AppLog.Write("taskbar settings save failed; preview reverted to the saved settings");
+                }
+                catch (Exception revertEx) when (revertEx is not OutOfMemoryException)
+                {
+                    AppLog.Write("taskbar settings preview revert after failed save failed", revertEx);
+                }
+                // The revert preview is only a restore of the value on disk, not an open dialog edit:
+                // drop both preview fields so future saves see the persisted switch again.
+                _taskbarPreviewEnabled = null;
+                _taskbarPreviewSettings = null;
+                System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
+                    "保存任务栏设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            // Hotkeys are a separate file and a separate apply step: a failed taskbar save must not
+            // drop a valid rebinding. The transaction registers the new gestures first and writes the
+            // file only when every one of them is live, so a combination owned by another process can
+            // no longer take the working hotkeys down with it. On any failure the previous settings
+            // and registrations are pushed back; if that restore is itself blocked the outcome lists
+            // the actions/gestures that are still missing instead of claiming success.
+            var previousHotkeys = _hotkeySettings;
+            var rebind = HotkeyRebindTransaction.Run(
+                () => ActivateHotkeySettings(hotkeys),
+                IsHotkeysFullyRegistered,
+                () => _hotkeySettingsStore.Save(hotkeys),
+                () => ActivateHotkeySettings(previousHotkeys));
+            if (rebind.Committed)
+            {
+                AppLog.Write($"global hotkeys updated: {hotkeys.Describe()}");
+            }
+            else
+            {
+                AppLog.Write(rebind.DescribeForLog());
+                if (rebind.PersistenceError is { } saveFailure)
+                    AppLog.Write("hotkey settings save failed", saveFailure);
+                if (rebind.RollbackError is { } restoreFailure)
+                    AppLog.Write("hotkey registration restore failed", restoreFailure);
+                System.Windows.MessageBox.Show(this, rebind.DescribeProblem(),
+                    "快捷键设置未保存", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
-                "保存任务栏设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        // Hotkeys are a separate file and a separate apply step: a failed taskbar save must not
-        // drop a valid rebinding, and the registrations only change after the file was written.
-        try
-        {
-            _hotkeySettingsStore.Save(hotkeys);
-            ApplyHotkeySettings(hotkeys);
-            AppLog.Write($"global hotkeys updated: {hotkeys.Describe()}");
-        }
-        catch (Exception ex)
-        {
-            AppLog.Write("hotkey settings save failed", ex);
-            System.Windows.MessageBox.Show(this, ex.GetBaseException().Message,
-                "保存快捷键设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            // Only the editor this invocation opened may clear the single-editor field; the exit
+            // sequence clears it (same field) before closing the dialog during teardown.
+            if (ReferenceEquals(_taskbarSettingsDialog, editor))
+                _taskbarSettingsDialog = null;
         }
     }
 
@@ -1867,6 +2630,9 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                     throw new InvalidOperationException(applied.Error ?? "采样异常，曲线未启动。");
                 return;
             }
+            // Authorised publication: an explicit profile apply (user pressed apply on a fixed-RPM or
+            // full-speed profile) is a takeover, not a renewal, so this is the only way this path may
+            // create the record. Later heartbeats use the compare-and-swap renewal in RefreshLease.
             owner._leaseStore.WriteActive(Environment.ProcessId, "profile-" + profile.FanMode,
                 DateTimeOffset.UtcNow, GuardianProcessIdentity.CurrentStartUtc);
             owner._restoreRequired = true;
@@ -2095,10 +2861,17 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                         _curveLeaseGate.Close();
                         continue;
                     }
-                    CheckLease(); // Never WriteActive after lease expiry (including a slow read).
+                    CheckLease(); // Never publish a heartbeat after lease expiry (including a slow read).
                     CheckSample(snapshot);
-                    _leaseStore.WriteActive(Environment.ProcessId, "fan-calibration", DateTimeOffset.UtcNow,
-                        GuardianProcessIdentity.CurrentStartUtc);
+                    // Compare-and-swap renewal, not a fresh publication: the store re-reads the record
+                    // under the cross-process lock, takes the clock only there, and replaces it only
+                    // when this process instance still owns it and its heartbeat is still fresh. A
+                    // lease Guardian recovered during the sampling interval therefore cannot be
+                    // revived here; the refusal keeps the existing fail path (restore + gate close).
+                    if (!_leaseStore.TryRenewOwnedFresh(Environment.ProcessId,
+                            GuardianProcessIdentity.CurrentStartUtc, "fan-calibration",
+                            static () => DateTimeOffset.UtcNow, GuardianCurveWriteLeasePolicy.ControlLeaseTimeout))
+                        throw new InvalidOperationException("标定租约已失效，禁止继续写入或续租。");
                     CheckLease();
                     _curveLeaseGate.Close();
                 }
@@ -2285,21 +3058,6 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         return attempt;
     }
 
-    private async void TaskbarToggleChanged(object sender, RoutedEventArgs e)
-    {
-        if (!IsLoaded)
-            return;
-        if (TaskbarToggle.IsChecked == true)
-            await RefreshSnapshotAsync();
-        else
-        {
-            foreach (var window in _taskbarWindows.ToArray())
-                window.Close();
-            _taskbarWindows.Clear();
-        }
-        _taskbarRefresh.ResetInterval();
-    }
-
     /// <summary>
     /// Single control entry point for every power-mode / manual fan write. Returns whether the write happened so a
     /// non-interactive caller (the CLI relay) can report an exact result; <paramref name="interactive"/> only controls
@@ -2347,6 +3105,9 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                     if (before.CpuTemperatureC >= 90)
                         throw new InvalidOperationException("温度达到 90°C，固定 RPM 已禁用；请使用满速保护并处理温度。");
                 }
+                // Authorised publication: an explicit user request for manual (fixed-RPM/100%) control
+                // reached this point through the Guardian check above - a takeover, never a renewal.
+                // Every later heartbeat goes through the compare-and-swap renewal in RefreshLease.
                 _leaseStore.WriteActive(Environment.ProcessId, "manual-duty", DateTimeOffset.UtcNow,
                     GuardianProcessIdentity.CurrentStartUtc);
                 _restoreRequired = true;
@@ -2579,7 +3340,15 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         {
             Hide();
             _trayIcon.ShowBalloonTip(1500, "MiniProToolkit", "已最小化到系统托盘", Forms.ToolTipIcon.Info);
+            return;
         }
+        // Restored: repaint the trend chart from the bounded history right now instead of waiting
+        // for the next sampling tick. Same rules as the visibility hook - nothing is painted while
+        // the window is closing or still hidden, and an already clean chart is left alone.
+        if (_closing || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            return;
+        if (_telemetryChartDirty && IsVisible)
+            UpdateTelemetryChart();
     }
 
     private void RequestExit()
@@ -2698,6 +3467,9 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                 // so the catch below may resume it.
                 try
                 {
+                    // Closing the write gate first: once the hand-back starts, no later pass (or a
+                    // calibration retry) may write through a gate that outlived the lease.
+                    _curveLeaseGate.Close();
                     if (_curveController is { } controller &&
                         (controller.IsEnabled || controller.RecoveryRequired))
                         controller.Dispose();
@@ -2709,7 +3481,15 @@ public partial class MainWindow : Window, IAppCommandEndpoint
                         RecordDiagnosticEvent("退出时请求 EC 自动恢复成功");
                     }
                     if (!_restoreRequired && _curveController?.RecoveryRequired != true)
-                        _leaseStore.ClearOwned(Environment.ProcessId);
+                    {
+                        // Explicit hand-back, not a blind clear: only the record this process instance
+                        // still owns (PID, process start, mode and heartbeat all matching) is removed,
+                        // so a lease republished by a restarted instance is never deleted here.
+                        if (_leaseStore.Read() is { } leaving &&
+                            leaving.ProcessId == Environment.ProcessId &&
+                            leaving.ProcessStartUtc == GuardianProcessIdentity.CurrentStartUtc)
+                            _leaseStore.ClearOwned(leaving);
+                    }
                 }
                 finally
                 {
@@ -2735,12 +3515,37 @@ public partial class MainWindow : Window, IAppCommandEndpoint
 
             // Phase 3, irreversible UI teardown.
             _shutdownSequence.Enter(ShutdownPhase.UiTeardown);
+            // The taskbar settings dialog is the single editor of the strip; close its modal loop
+            // before the strips it previews are gone, so an exit started from inside that loop can
+            // finish instead of leaving an orphan dialog. Its cancel preview is a no-op here
+            // because `_closing` blocks every create/update, and the field is cleared first so a
+            // late click cannot find it (and cannot open a second editor).
+            if (_taskbarSettingsDialog is { } taskbarDialog)
+            {
+                _taskbarSettingsDialog = null;
+                taskbarDialog.Close();
+            }
             foreach (var window in _taskbarWindows.ToArray())
                 window.Close();
             _taskbarWindows.Clear();
             UnregisterHotkeys();
             _hotkeySource = null;
             _osd.Close();
+            // Close the card's settings dialog first: its own cancel path restores the opened
+            // preview, which must happen while the card still exists (and is a no-op here because
+            // `_closing` blocks every rebuild). CloseForShutdown is the one close that really closes
+            // the card; a plain Close would be translated into a hide request.
+            if (_floatingSettingsDialog is { } floatingDialog)
+            {
+                _floatingSettingsDialog = null;
+                floatingDialog.Close();
+            }
+            SetFloatingEditingState(editing: false);
+            if (_floatingStatusWindow is { } floatingCard)
+            {
+                _floatingStatusWindow = null;
+                floatingCard.CloseForShutdown();
+            }
             TeardownShutdownSignal();
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
@@ -3100,10 +3905,12 @@ public partial class MainWindow : Window, IAppCommandEndpoint
 
     private bool HasValidControlLease()
     {
+        // One fresh lease read, one pure verdict. The same policy is re-applied by the curve target
+        // right before its hardware write, so an expired or recovered lease cannot be revived.
         var lease = _leaseStore.Read();
-        return lease?.ProcessId == Environment.ProcessId &&
-               lease.ProcessStartUtc == GuardianProcessIdentity.CurrentStartUtc &&
-               !lease.IsStale(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(8));
+        return GuardianCurveWriteLeasePolicy.CanWrite(lease, Environment.ProcessId,
+            GuardianProcessIdentity.CurrentStartUtc, DateTimeOffset.UtcNow,
+            GuardianCurveWriteLeasePolicy.ControlLeaseTimeout);
     }
 
     /// <summary>
@@ -3114,6 +3921,10 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     /// </summary>
     private void TakeOverCurveLease()
     {
+        // Authorised publication: every caller reaches here only after an explicit user or profile
+        // intent (curve toggle, curve profile apply, calibration start) and after checking that no
+        // other control owns the fans. This is a takeover, not a renewal, so it is the one place that
+        // may create the record; every later heartbeat uses the compare-and-swap renewal instead.
         _leaseStore.WriteActive(Environment.ProcessId, "fan-curve", DateTimeOffset.UtcNow,
             GuardianProcessIdentity.CurrentStartUtc);
         _curveLeaseGate.SetPass(true);
@@ -3132,10 +3943,15 @@ public partial class MainWindow : Window, IAppCommandEndpoint
             }
             if (fixedRpmFault || (_curveController?.RecoveryRequired == true && !_curveController.IsEnabled))
                 return; // Preserve failed-recovery lease so Guardian can retry after expiry.
-            if (!HasValidControlLease()) return; // Never revive ownership after a slow call outlives the lease.
             var mode = _curveController?.IsEnabled == true ? "fan-curve" : "manual-duty";
-            _leaseStore.WriteActive(Environment.ProcessId, mode, DateTimeOffset.UtcNow,
-                GuardianProcessIdentity.CurrentStartUtc);
+            // Heartbeat = compare-and-swap renewal. The store takes the clock under the cross-process
+            // lock, so this pass can never publish a heartbeat for a lease Guardian recovered between
+            // the pass-start read and this line, and a lease that lapsed while the pass was slow is
+            // never revived. A refused renewal closes the curve write gate instead: no hardware write
+            // may follow a heartbeat that could not be published.
+            if (!_leaseStore.TryRenewOwnedFresh(Environment.ProcessId, GuardianProcessIdentity.CurrentStartUtc,
+                    mode, static () => DateTimeOffset.UtcNow, GuardianCurveWriteLeasePolicy.ControlLeaseTimeout))
+                _curveLeaseGate.Close();
         }
         catch (Exception ex)
         {
@@ -3179,6 +3995,14 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         menu.Items.Add(fixedMenu);
         menu.Items.Add(new Forms.ToolStripMenuItem("安全曲线", null, (_, _) => EnableCurveFromMenu()) { Enabled = false });
         menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        // Desktop floating card: every entry works without the card receiving a mouse event, so a
+        // click-through card can always be shown/hidden, edited, made interactive again or reset.
+        // Display-only: nothing here reads hardware, writes the EC/fan or asks the Guardian.
+        menu.Items.Add("显示/隐藏桌面悬浮窗", null, (_, _) => ToggleFloatingStatus());
+        menu.Items.Add("桌面悬浮窗设置…", null, (_, _) => ShowFloatingSettingsFromTray());
+        menu.Items.Add("关闭悬浮窗鼠标穿透", null, (_, _) => DisableFloatingClickThrough());
+        menu.Items.Add("恢复悬浮窗默认位置", null, (_, _) => ResetFloatingPosition());
         menu.Items.Add("设置与诊断", null, (_, _) => ShowDiagnosticsFromTray());
         // Minimal user switch for the OSD itself. The control paths keep running either way; only
         // the popup is silenced. Persisted by IsOsdEnabled (osd.json).
@@ -3256,6 +4080,17 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     {
         ShowMainWindow();
         DiagnosticsClick(this, new RoutedEventArgs());
+    }
+
+    /// <summary>
+    /// Opens (or brings forward) the one floating settings dialog from the tray. Marshalled through the
+    /// dispatcher because it is opened from a closing WinForms context menu, exactly like the OSD
+    /// appearance entry above; the entry itself executes no settings write.
+    /// </summary>
+    private void ShowFloatingSettingsFromTray()
+    {
+        ShowMainWindow();
+        Dispatcher.BeginInvoke(new Action(() => FloatingSettingsClick(this, new RoutedEventArgs())));
     }
 
     private void ToggleStartupFromTray(Forms.ToolStripMenuItem item)
@@ -3372,19 +4207,19 @@ public partial class MainWindow : Window, IAppCommandEndpoint
     /// Registers every configured hotkey independently, so one combination already owned by another
     /// process only costs that single action (per-action degradation) instead of all of them. The
     /// failures are reported through a log-safe summary (action label, gesture, fixed reason - never a
-    /// path or a command line).
+    /// path or a command line) and returned so a rebind can decide whether the new set is complete.
     /// </summary>
-    private void RegisterHotkeys()
+    private List<HotkeyRegistrationFailure> RegisterHotkeys()
     {
         if (IsHotkeysFullyRegistered())
-            return;
+            return [];
         var handle = new WindowInteropHelper(this).Handle;
         if (handle == IntPtr.Zero)
         {
             // The window is not created yet (or already destroyed); a later SourceInitialized/exit
             // resume retries instead of registering against an invalid handle.
             AppLog.Write("global hotkeys: window handle unavailable, registration deferred");
-            return;
+            return [];
         }
         // The hook also carries the shell/display notifications, so it is attached (once) from
         // here as well; it is removed by ReleaseWindowHook in UnregisterHotkeys even when the
@@ -3416,18 +4251,21 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         }
         if (HotkeyRegistrationReport.Summarize(failures) is { } summary)
             AppLog.Write(summary);
+        return failures;
     }
 
     /// <summary>
-    /// Re-registers the hotkeys with the current settings. Used after the settings dialog changed the
-    /// bindings: it releases exactly the registrations it made and never touches the window hook, so
-    /// the taskbar/shell notifications stay attached.
+    /// Swaps the live hotkeys for <paramref name="settings"/>: the previous registrations are
+    /// released first (the window hook is never touched), then the field takes the new value and the
+    /// new gestures are registered. Returns the actions that could not be registered; a deferred
+    /// registration (window handle gone) returns no failures but leaves
+    /// <see cref="IsHotkeysFullyRegistered"/> false, which the rebind transaction treats as unfinished.
     /// </summary>
-    private void ApplyHotkeySettings(HotkeySettings settings)
+    private List<HotkeyRegistrationFailure> ActivateHotkeySettings(HotkeySettings settings)
     {
         UnregisterHotkeyRegistrations();
         _hotkeySettings = settings;
-        RegisterHotkeys();
+        return RegisterHotkeys();
     }
 
     /// <summary>Releases only the live hotkey registrations (the window hook stays attached).</summary>
@@ -3507,6 +4345,19 @@ public partial class MainWindow : Window, IAppCommandEndpoint
         if (HotkeyActionFor(id) is not { } action || !_registeredHotkeys.Contains(id))
             return IntPtr.Zero;
         handled = true;
+        // The two desktop-floating actions are display-only. They are dispatched in their own branch
+        // and return immediately, so they never reach the control-action switch below - and therefore
+        // never the hardware / Guardian / emergency gates that live on those control paths. A missing
+        // Guardian or a hardware error must not be able to lock the user inside a click-through card
+        // they cannot click.
+        if (action is HotkeyAction.ToggleFloatingStatus or HotkeyAction.DisableFloatingClickThrough)
+        {
+            if (action == HotkeyAction.ToggleFloatingStatus)
+                ToggleFloatingStatus();
+            else
+                DisableFloatingClickThrough();
+            return IntPtr.Zero;
+        }
         _ = action switch
         {
             HotkeyAction.SilenceMode => ExecuteAsync("快捷键：静音模式", h => h.SetPowerMode(PowerMode.Silence)),

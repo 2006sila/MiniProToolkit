@@ -31,9 +31,20 @@ internal sealed class GuardianLeasedFanTarget : IFanControlTarget
 
     private void WriteDuty(int dutyPercent)
     {
-        // Publish before the write so a crash in the WMI call is still recoverable.
-        _leaseStore.WriteActive(Environment.ProcessId, "fan-curve", DateTimeOffset.UtcNow,
-            GuardianProcessIdentity.CurrentStartUtc);
+        // The pass-start verdict is not enough: this pass may have spent seconds in an LHM/WMI
+        // rebuild, so the lease it accepted can be stale or already recovered by Guardian. The
+        // lease is therefore validated *and* renewed atomically under the cross-process lock
+        // immediately before the hardware write: a separate check-then-write would leave a window
+        // in which Guardian could clear the record after the read. Renewal only updates an existing
+        // record owned by this process instance with a fresh heartbeat; a missing, stale or foreign
+        // record returns false and nothing is written, so this path can never create or revive
+        // ownership. The exception keeps the caller's existing fail path (FanCurveController
+        // restores EC automatic, which closes the gate).
+        // The store invokes the clock itself, after it holds the cross-process lock, so the staleness
+        // verdict and the heartbeat it publishes use one time taken *after* a possibly long lock wait.
+        if (!_leaseStore.TryRenewOwnedFresh(Environment.ProcessId, GuardianProcessIdentity.CurrentStartUtc,
+                "fan-curve", static () => DateTimeOffset.UtcNow, GuardianCurveWriteLeasePolicy.ControlLeaseTimeout))
+            throw new InvalidOperationException("控制租约在写入前已失效，曲线写入已被拒绝。");
         _hardware.SetCurveDuty(dutyPercent);
     }
 

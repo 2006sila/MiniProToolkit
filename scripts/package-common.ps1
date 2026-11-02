@@ -169,6 +169,10 @@ function Get-UserDataRoot {
 }
 
 function Assert-PackagePayload {
+    # Required payload surface, checked by exact relative path. validate-package.ps1 is required
+    # because publish-release.ps1 ships and runs it as the payload self-check and build-installer
+    # runs it from the payload before ISCC: a payload without the validator must fail closed here
+    # instead of silently degrading the self-check to a warning.
     param([string]$PackageRoot)
     $required = @(
         (Join-Path $PackageRoot 'App\MiniProToolkit.exe'),
@@ -179,6 +183,7 @@ function Assert-PackagePayload {
         (Join-Path $PackageRoot 'scripts\repair-package.ps1'),
         (Join-Path $PackageRoot 'scripts\uninstall-package.ps1'),
         (Join-Path $PackageRoot 'scripts\restore-ec-automatic.ps1'),
+        (Join-Path $PackageRoot 'scripts\validate-package.ps1'),
         (Join-Path $PackageRoot 'docs\README.md'),
         (Join-Path $PackageRoot 'docs\architecture.md'),
         (Join-Path $PackageRoot 'docs\release-packaging.md'),
@@ -188,6 +193,7 @@ function Assert-PackagePayload {
         (Join-Path $PackageRoot 'docs\fan-calibration.md'),
         (Join-Path $PackageRoot 'docs\fan-control-hardening.md'),
         (Join-Path $PackageRoot 'docs\history-and-diagnostics.md'),
+        (Join-Path $PackageRoot 'docs\performance-review.md'),
         (Join-Path $PackageRoot 'docs\profile-automation-and-installer.md'),
         (Join-Path $PackageRoot 'docs\product-roadmap.md'),
         (Join-Path $PackageRoot 'docs\THIRD-PARTY-NOTICES.md'),
@@ -519,35 +525,83 @@ function Remove-StartupRegistrationIfOwned {
     }
 }
 
+function Assert-NoReparsePoint {
+    # Delete helpers must not follow a junction or symlink out of the directory they own.
+    # GetAttributes reports the link itself (also for a dangling link), so a renamed-in link with a
+    # whitelisted name is detected before anything is deleted. Unreadable metadata fails closed.
+    param([string]$Path, [string]$Description)
+    try {
+        $attributes = [System.IO.File]::GetAttributes($Path)
+    }
+    catch [System.IO.FileNotFoundException] {
+        return
+    }
+    catch [System.IO.DirectoryNotFoundException] {
+        return
+    }
+    catch {
+        throw "Unable to inspect $Description '$Path' for a reparse point; it was not deleted: $($_.Exception.Message)"
+    }
+    if (($attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "$Description '$Path' is a reparse point (junction/symlink); refusing to delete through it. Remove the link manually if it is not needed."
+    }
+}
+
 function Remove-GuardianProgramData {
     # Purge helper for %ProgramData%\MiniProToolkit. It never deletes the lease or the lease lock
     # file: a bare recursive delete of that directory could destroy recovery ownership (the lease)
     # or break the cross-process lock contract (the .lock file is never deleted). Only the known,
-    # disposable Guardian artifacts are removed; an active lease, an unrecognised file or a
-    # subdirectory aborts the purge instead of widening the delete.
+    # disposable Guardian artifacts are removed, each by exact file name and nothing else:
+    #   guardian.log, guardian.log.1 .. guardian.log.3            (BoundedTextLog: 2 MiB + 3 archives)
+    #   diagnostic-events.jsonl, .1 .. .4                        (DiagnosticEventStore: 2 MiB + 4 archives)
+    # No wildcard, glob or StartsWith matching is used, because a widened pattern would also match
+    # artifacts this helper has no evidence about. An active lease, an unrecognised file, a
+    # subdirectory or a reparse point aborts the purge instead of widening the delete.
     $root = Get-ProgramDataRoot
     if (-not (Test-Path -LiteralPath $root -PathType Container)) { return }
+    Assert-NoReparsePoint -Path $root -Description 'The Guardian program data directory'
     $leasePath = Get-LeasePath
     if (Test-Path -LiteralPath $leasePath -PathType Leaf) {
         throw "Refusing to purge Guardian program data while a lease exists: $leasePath"
     }
     $leaseName = [System.IO.Path]::GetFileName($leasePath)
     $lockName = [System.IO.Path]::GetFileName((Get-LeaseLockPath))
-    $disposable = @('guardian.log', 'diagnostic-events.jsonl')
+    $disposable = @(
+        'guardian.log',
+        'guardian.log.1',
+        'guardian.log.2',
+        'guardian.log.3',
+        'diagnostic-events.jsonl',
+        'diagnostic-events.jsonl.1',
+        'diagnostic-events.jsonl.2',
+        'diagnostic-events.jsonl.3',
+        'diagnostic-events.jsonl.4'
+    )
     $protected = @($leaseName, $lockName)
+    $rootFull = [System.IO.Path]::GetFullPath($root).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
     $unexpected = @()
+    $targets = @()
     foreach ($item in @(Get-ChildItem -LiteralPath $root -Force -ErrorAction Stop)) {
         if ($item -is [System.IO.DirectoryInfo]) { $unexpected += $item.FullName; continue }
         if ($protected -contains $item.Name) { continue }
-        if ($disposable -notcontains $item.Name) { $unexpected += $item.FullName }
+        if ($disposable -notcontains $item.Name) { $unexpected += $item.FullName; continue }
+        # Exact-name target: the resolved parent must still be the program data root itself, so an
+        # entry can never be deleted through a different path than the whitelisted one.
+        $full = [System.IO.Path]::GetFullPath($item.FullName)
+        if (-not [string]::Equals([System.IO.Path]::GetDirectoryName($full), $rootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $unexpected += $item.FullName
+            continue
+        }
+        Assert-NoReparsePoint -Path $full -Description 'A disposable Guardian log file'
+        $targets += $full
     }
     if ($unexpected.Count -gt 0) {
         throw "Refusing to purge unrecognised Guardian program data: $($unexpected -join '; '). Remove it manually after checking that no lease is involved."
     }
-    foreach ($name in $disposable) {
-        $path = Join-Path $root $name
-        if (Test-Path -LiteralPath $path -PathType Leaf) {
-            Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+    foreach ($path in $targets) {
+        Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+        if (Test-Path -LiteralPath $path) {
+            throw "Guardian program data '$path' still exists after it was deleted; the purge is incomplete."
         }
     }
     # The directory is only removed when it is empty; a surviving <lease>.lock keeps it in place.

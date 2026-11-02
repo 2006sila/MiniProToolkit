@@ -19,7 +19,10 @@ public sealed class HotkeySettingsTests
             (HotkeyAction.BalanceMode, "Ctrl+Alt+2"),
             (HotkeyAction.PerformanceMode, "Ctrl+Alt+3"),
             (HotkeyAction.AutomaticMode, "Ctrl+Alt+A"),
-            (HotkeyAction.FullSpeed, "Ctrl+Alt+F")
+            (HotkeyAction.FullSpeed, "Ctrl+Alt+F"),
+            // Appended in the second phase; the five combinations above are unchanged.
+            (HotkeyAction.ToggleFloatingStatus, "Ctrl+Alt+F9"),
+            (HotkeyAction.DisableFloatingClickThrough, "Ctrl+Alt+F10")
         ],
             HotkeySettings.Default.Bindings.Select(binding => (binding.Action, binding.Gesture.Describe())));
 
@@ -35,7 +38,11 @@ public sealed class HotkeySettingsTests
         Assert.Equal(2, (int)HotkeyAction.PerformanceMode);
         Assert.Equal(3, (int)HotkeyAction.AutomaticMode);
         Assert.Equal(4, (int)HotkeyAction.FullSpeed);
-        Assert.Equal(5, Enum.GetValues<HotkeyAction>().Length);
+        // The desktop-floating actions were appended, so their registration ids are 6 and 7.
+        Assert.Equal(5, (int)HotkeyAction.ToggleFloatingStatus);
+        Assert.Equal(6, (int)HotkeyAction.DisableFloatingClickThrough);
+        Assert.Equal(7, Enum.GetValues<HotkeyAction>().Length);
+        Assert.Equal(7, HotkeySettings.Default.Bindings.Count);
     }
 
     [Fact]
@@ -357,7 +364,8 @@ public sealed class HotkeySettingsTests
     {
         var description = HotkeySettings.Default.Describe();
 
-        Assert.Equal("静音模式=Ctrl+Alt+1；均衡模式=Ctrl+Alt+2；性能模式=Ctrl+Alt+3；EC 自动=Ctrl+Alt+A；满速=Ctrl+Alt+F", description);
+        Assert.Equal("静音模式=Ctrl+Alt+1；均衡模式=Ctrl+Alt+2；性能模式=Ctrl+Alt+3；EC 自动=Ctrl+Alt+A；满速=Ctrl+Alt+F；" +
+                     "显示/隐藏桌面悬浮窗=Ctrl+Alt+F9；关闭悬浮窗鼠标穿透=Ctrl+Alt+F10", description);
         Assert.DoesNotContain(":\\", description);
     }
 
@@ -514,6 +522,97 @@ public sealed class HotkeySettingsTests
             Assert.Equal("Ctrl+Alt+A", settings.GestureFor(HotkeyAction.AutomaticMode).Describe());
             Assert.Equal("Ctrl+Alt+F", settings.GestureFor(HotkeyAction.FullSpeed).Describe());
             settings.Validate();
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void OldFileWithFiveCustomBindingsKeepsThemAndAppendsTheTwoNewDefaults()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "hotkeys.json");
+            // Exactly what the previous build wrote after the user rebound all five actions.
+            File.WriteAllText(path,
+                "{\"version\":1,\"bindings\":[" +
+                "{\"action\":\"SilenceMode\",\"modifiers\":\"Control+Shift\",\"key\":\"Q\"}," +
+                "{\"action\":\"BalanceMode\",\"modifiers\":\"Control+Alt\",\"key\":\"7\"}," +
+                "{\"action\":\"PerformanceMode\",\"modifiers\":\"Control+Alt\",\"key\":\"8\"}," +
+                "{\"action\":\"AutomaticMode\",\"modifiers\":\"Control+Alt\",\"key\":\"9\"}," +
+                "{\"action\":\"FullSpeed\",\"modifiers\":\"Control+Alt\",\"key\":\"B\"}]}");
+
+            var settings = new HotkeySettingsStore(path).LoadOrDefault(out var warning);
+
+            // A migrated file is not damaged: no warning, no reset, the two new actions just appear.
+            Assert.Null(warning);
+            Assert.Equal("Ctrl+Shift+Q", settings.GestureFor(HotkeyAction.SilenceMode).Describe());
+            Assert.Equal("Ctrl+Alt+7", settings.GestureFor(HotkeyAction.BalanceMode).Describe());
+            Assert.Equal("Ctrl+Alt+8", settings.GestureFor(HotkeyAction.PerformanceMode).Describe());
+            Assert.Equal("Ctrl+Alt+9", settings.GestureFor(HotkeyAction.AutomaticMode).Describe());
+            Assert.Equal("Ctrl+Alt+B", settings.GestureFor(HotkeyAction.FullSpeed).Describe());
+            Assert.Equal("Ctrl+Alt+F9", settings.GestureFor(HotkeyAction.ToggleFloatingStatus).Describe());
+            Assert.Equal("Ctrl+Alt+F10", settings.GestureFor(HotkeyAction.DisableFloatingClickThrough).Describe());
+            settings.Validate();
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void UserBindingOfANewDefaultMovesTheNewActionAndNeverTheOldOne()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "hotkeys.json");
+            // The user already owns Ctrl+Alt+F9 with an old action: the appended action must避让.
+            File.WriteAllText(path,
+                "{\"version\":1,\"bindings\":[" +
+                "{\"action\":\"SilenceMode\",\"modifiers\":\"Control+Alt\",\"key\":\"F9\"}]}");
+
+            var settings = new HotkeySettingsStore(path).LoadOrDefault(out var warning);
+
+            Assert.Equal("Ctrl+Alt+F9", settings.GestureFor(HotkeyAction.SilenceMode).Describe());
+            Assert.NotEqual("Ctrl+Alt+F9", settings.GestureFor(HotkeyAction.ToggleFloatingStatus).Describe());
+            // The old action is never rewritten, and the file is not reset as a whole.
+            Assert.Equal("Ctrl+Alt+2", settings.GestureFor(HotkeyAction.BalanceMode).Describe());
+            Assert.NotNull(warning);
+            settings.Validate();
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void RebindingANewActionOntoAnOldCombinationIsStillRejected()
+    {
+        var settings = HotkeySettings.Default
+            .WithGesture(HotkeyAction.ToggleFloatingStatus, HotkeyGesture.CtrlAlt("1"));
+        var error = Assert.Throws<ArgumentException>(settings.Validate);
+        Assert.Contains("显示/隐藏桌面悬浮窗", error.Message);
+        Assert.Contains("静音模式", error.Message);
+        Assert.Contains("Ctrl+Alt+1", error.Message);
+    }
+
+    [Fact]
+    public void NewActionsRoundTripThroughTheStore()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "hotkeys.json");
+            var store = new HotkeySettingsStore(path);
+            var expected = HotkeySettings.Default
+                .WithGesture(HotkeyAction.ToggleFloatingStatus, new HotkeyGesture(HotkeyModifiers.Control | HotkeyModifiers.Shift, "F8"))
+                .WithGesture(HotkeyAction.DisableFloatingClickThrough, new HotkeyGesture(HotkeyModifiers.Control | HotkeyModifiers.Alt, "F11"));
+            expected.Validate();
+            store.Save(expected);
+
+            var actual = store.LoadOrDefault(out var warning);
+
+            Assert.Null(warning);
+            Assert.Equal("Ctrl+Shift+F8", actual.GestureFor(HotkeyAction.ToggleFloatingStatus).Describe());
+            Assert.Equal("Ctrl+Alt+F11", actual.GestureFor(HotkeyAction.DisableFloatingClickThrough).Describe());
+            actual.Validate();
         }
         finally { Directory.Delete(directory, true); }
     }

@@ -40,6 +40,8 @@ public partial class FanCurveEditorWindow : Window
         _calibration = calibration ?? FanCalibration.Default;
         _snapshotSource = snapshotSource;
         InitializeComponent();
+        // 纯展示：与其他功能窗共用同一份深色原生标题栏实现（DWM 不可用时静默跳过）。
+        ObsidianWindowChrome.Apply(this);
         PointsGrid.ItemsSource = _points;
         LoadSettings(settings);
         _liveTimer.Tick += (_, _) => RefreshLive();
@@ -246,7 +248,7 @@ public partial class FanCurveEditorWindow : Window
         try { Result = BuildSettings(); DialogResult = true; }
         catch (Exception ex) when (IsInputError(ex)) { ShowError(ex); }
     }
-    private void ShowError(Exception ex) { FeedbackText.Text = ex.Message; FeedbackText.Foreground = Brushes.DarkOrange; }
+    private void ShowError(Exception ex) { FeedbackText.Text = ex.Message; FeedbackText.Foreground = ObsidianTheme.BrushOf(this, "ObsidianWarningBrush"); }
     private static bool IsInputError(Exception ex) => ex is FormatException or ArgumentException or OverflowException;
     private static int ParseInt(string text, string name) => int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
         ? value : throw new FormatException($"{name}必须是整数。");
@@ -330,7 +332,7 @@ public partial class FanCurveEditorWindow : Window
         try
         {
             var settings = BuildSettings(false);
-            FeedbackText.Foreground = Brushes.DarkGreen;
+            FeedbackText.Foreground = ObsidianTheme.BrushOf(this, "ObsidianAccentBrush");
             FeedbackText.Text = "曲线有效。" + SafetySummary(settings) +
                 (settings.HasExplicitRpmTargets
                     ? "显式目标 RPM 独立保存；图中 duty 是不可削弱的温度安全线，安全线超速只报告限制。"
@@ -339,25 +341,25 @@ public partial class FanCurveEditorWindow : Window
             foreach (var temp in new[] { 1, 20, 40, 60, 80, 95 })
             {
                 var x = Position(temp, 0).X;
-                AddLine(CurveCanvas, new(x, TopPad), new(x, TopPad + PlotHeight), Brushes.LightGray);
+                AddLine(CurveCanvas, new(x, TopPad), new(x, TopPad + PlotHeight), ObsidianTheme.BrushOf(this, "ObsidianChartGuideBrush"));
                 AddText(CurveCanvas, $"{temp}°", x - 10, TopPad + PlotHeight + 4);
             }
             foreach (var duty in new[] { 0, 40, 60, 80, 100 })
             {
                 var y = Position(1, duty).Y;
-                AddLine(CurveCanvas, new(LeftPad, y), new(LeftPad + PlotWidth, y), Brushes.LightGray);
+                AddLine(CurveCanvas, new(LeftPad, y), new(LeftPad + PlotWidth, y), ObsidianTheme.BrushOf(this, "ObsidianChartGuideBrush"));
                 AddText(CurveCanvas, $"{duty}%", 4, y - 8);
                 if (duty >= 40) AddText(CurveCanvas, $"≈{_calibration.RpmForDuty(duty)}", LeftPad + PlotWidth + 6, y - 8);
             }
             AddText(CurveCanvas, "估计 RPM", LeftPad + PlotWidth + 6, 0);
             var emergency = Position(settings.EmergencyTemperatureC, 0).X;
-            AddLine(CurveCanvas, new(emergency, TopPad), new(emergency, TopPad + PlotHeight), Brushes.IndianRed, true);
+            AddLine(CurveCanvas, new(emergency, TopPad), new(emergency, TopPad + PlotHeight), ObsidianTheme.BrushOf(this, "ObsidianDangerBrush"), true);
             AddTierLine(settings.WarningTier, "预警");
             AddTierLine(settings.PreEmergencyTier, "前级");
             var minimum = Position(1, settings.MinimumDutyPercent).Y;
-            AddLine(CurveCanvas, new(LeftPad, minimum), new(LeftPad + PlotWidth, minimum), Brushes.SlateGray, true);
-            var rising = new Polyline { Stroke = Brushes.SteelBlue, StrokeThickness = 2 };
-            var falling = new Polyline { Stroke = Brushes.DarkOrange, StrokeThickness = 2, StrokeDashArray = [4, 3] };
+            AddLine(CurveCanvas, new(LeftPad, minimum), new(LeftPad + PlotWidth, minimum), ObsidianTheme.BrushOf(this, "ObsidianChartTargetRpmBrush"), true);
+            var rising = new Polyline { Stroke = ObsidianTheme.BrushOf(this, "ObsidianChartRpmBrush"), StrokeThickness = 2 };
+            var falling = new Polyline { Stroke = ObsidianTheme.BrushOf(this, "ObsidianChartPowerBrush"), StrokeThickness = 2, StrokeDashArray = [4, 3] };
             foreach (var p in settings.Points)
             {
                 rising.Points.Add(Position(p.TemperatureC, p.DutyPercent));
@@ -382,7 +384,7 @@ public partial class FanCurveEditorWindow : Window
     {
         if (tier is null) return;
         var x = Position(tier.TemperatureC, 0).X;
-        AddLine(CurveCanvas, new(x, TopPad), new(x, TopPad + PlotHeight), Brushes.MediumPurple, true);
+        AddLine(CurveCanvas, new(x, TopPad), new(x, TopPad + PlotHeight), ObsidianTheme.BrushOf(this, "ObsidianChartDutyBrush"), true);
         AddText(CurveCanvas, $"{label} {tier.DutyPercent}%", x + 2, TopPad + PlotHeight - 14);
     }
 
@@ -410,8 +412,10 @@ public partial class FanCurveEditorWindow : Window
     {
         var node = new Ellipse
         {
-            Width = 12, Height = 12, Fill = down ? Brushes.DarkOrange : Brushes.SteelBlue,
-            Stroke = ReferenceEquals(point, PointsGrid.SelectedItem) ? Brushes.Black : Brushes.White,
+            Width = 12, Height = 12,
+            Fill = ObsidianTheme.BrushOf(this, down ? "ObsidianChartPowerBrush" : "ObsidianChartRpmBrush"),
+            Stroke = ObsidianTheme.BrushOf(this,
+                ReferenceEquals(point, PointsGrid.SelectedItem) ? "ObsidianAccentBrush" : "ObsidianTextPrimaryBrush"),
             StrokeThickness = 2, Tag = (point, down), Cursor = System.Windows.Input.Cursors.SizeAll,
             ToolTip = $"{(down ? "降温" : "升温")} { (down ? point.RampDownTemperatureC : point.TemperatureC)}°C · {point.DutyPercent}% · 标定约 {point.CalibrationRpm} RPM · 显式目标 {point.TargetRpm} RPM"
         };
@@ -476,8 +480,8 @@ public partial class FanCurveEditorWindow : Window
         { LiveText.Text = "实时数据无效或已过期，游标已隐藏。"; return; }
         var cursorDuty = _calibration.DutyForRpm(rpm);
         var position = Position(temperature, cursorDuty);
-        AddLine(CurveCanvas, new(position.X, TopPad), new(position.X, TopPad + PlotHeight), Brushes.ForestGreen, true);
-        var dot = new Ellipse { Width = 10, Height = 10, Fill = Brushes.ForestGreen, IsHitTestVisible = false };
+        AddLine(CurveCanvas, new(position.X, TopPad), new(position.X, TopPad + PlotHeight), ObsidianTheme.BrushOf(this, "ObsidianAccentBrush"), true);
+        var dot = new Ellipse { Width = 10, Height = 10, Fill = ObsidianTheme.BrushOf(this, "ObsidianAccentBrush"), IsHitTestVisible = false };
         Canvas.SetLeft(dot, position.X - 5); Canvas.SetTop(dot, position.Y - 5); CurveCanvas.Children.Add(dot);
         LiveText.Text = $"实时：{temperature:0.#}°C · 实际 {rpm} RPM · 请求 duty {s.TargetDuty?.ToString() ?? "--"}%（绿点纵轴为 RPM 反算参考，不是实测 duty）";
     }
@@ -488,7 +492,7 @@ public partial class FanCurveEditorWindow : Window
         CalibrationCanvas.Children.Clear();
         var width = CalibrationCanvas.ActualWidth; var height = CalibrationCanvas.ActualHeight;
         AddText(CalibrationCanvas, $"本机标定参考（横轴 duty，纵轴 RPM）：40% ≈ {_calibration.RpmForDuty(40)} / 100% ≈ {_calibration.RpmForDuty(100)} RPM", 8, 2);
-        var line = new Polyline { Stroke = Brushes.MediumPurple, StrokeThickness = 2 };
+        var line = new Polyline { Stroke = ObsidianTheme.BrushOf(this, "ObsidianChartDutyBrush"), StrokeThickness = 2 };
         var maximum = Math.Max(1, _calibration.Points[^1].Rpm);
         foreach (var p in _calibration.Points)
             line.Points.Add(new(LeftPad + p.DutyPercent / 100.0 * (width - LeftPad - RightPad), height - 8 - p.Rpm / (double)maximum * (height - 30)));
@@ -496,7 +500,7 @@ public partial class FanCurveEditorWindow : Window
         if (PointsGrid.SelectedItem is EditablePoint point && int.TryParse(point.DutyPercent, out var duty) && duty is >= 0 and <= 100)
         {
             var x = LeftPad + duty / 100.0 * (width - LeftPad - RightPad);
-            AddLine(CalibrationCanvas, new(x, 24), new(x, height - 4), Brushes.SteelBlue, true);
+            AddLine(CalibrationCanvas, new(x, 24), new(x, height - 4), ObsidianTheme.BrushOf(this, "ObsidianChartRpmBrush"), true);
         }
     }
     private static void AddLine(Canvas canvas, Point start, Point end, System.Windows.Media.Brush brush, bool dashed = false)
@@ -505,9 +509,15 @@ public partial class FanCurveEditorWindow : Window
         if (dashed) line.StrokeDashArray = [4, 3];
         canvas.Children.Add(line);
     }
-    private static void AddText(Canvas canvas, string text, double x, double y)
+    private void AddText(Canvas canvas, string text, double x, double y)
     {
-        var label = new TextBlock { Text = text, Foreground = Brushes.DimGray, FontSize = 11, IsHitTestVisible = false };
+        var label = new TextBlock
+        {
+            Text = text,
+            Foreground = ObsidianTheme.BrushOf(this, "ObsidianTextSecondaryBrush"),
+            FontSize = 11,
+            IsHitTestVisible = false
+        };
         Canvas.SetLeft(label, x); Canvas.SetTop(label, y); canvas.Children.Add(label);
     }
 

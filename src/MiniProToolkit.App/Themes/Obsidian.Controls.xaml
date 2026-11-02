@@ -1,0 +1,504 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        方案 A「曜石控制舱」公共控件皮肤（子字典）。
+
+        用途：让除主窗口以外的普通功能窗口（设置 / 历史 / 方案 / 诊断 / 曲线 / 标定…）复用同一套深色外观。
+        挂载方式：每个普通 Window 在自己的 Window.Resources 里合并本字典；本字典再合并 Obsidian.xaml 取基础色和键控样式。
+        **不**写进 App.xaml 全局资源：OSD 弹窗与任务栏 overlay 的 Background / Foreground / Opacity / 字体 / 位置
+        由用户配置在运行时写入（见 OsdWindow.ApplyStyle、TaskbarStatusWindow.ApplySettings），全局隐式样式会污染这些
+        自定义覆盖层，所以只做「按窗口合并」。
+
+        这里只放纯视觉样式（颜色 / 圆角 / 状态），不含任何业务、数值、命令或事件逻辑。
+    -->
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Obsidian.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- ===== 表格 / 图表补充色 ===== -->
+    <SolidColorBrush x:Key="ObsidianGridLineBrush" Color="#1E2A38" />
+    <SolidColorBrush x:Key="ObsidianPlotSurfaceBrush" Color="#0D1622" />
+    <SolidColorBrush x:Key="ObsidianSelectionBrush" Color="#1A66DEC4" />
+
+    <!-- ===== TextBox ===== -->
+    <!-- 组合框内部的可编辑输入风格（无边框 / 透明底 / 只保留光标与选区）。
+         留作显式引用的键控样式：主窗口的 ComboBox 模板在 Obsidian.xaml 里，不能引用本子字典的键。 -->
+    <Style x:Key="ObsidianInlineTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CaretBrush" Value="{StaticResource ObsidianAccentBrush}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource ObsidianSelectionBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border Background="Transparent" SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{StaticResource ObsidianControlDisabledTextBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 普通输入框 / 只读报告框：深底、可读、可编辑，光标与选区可见。 -->
+    <Style x:Key="ObsidianTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianControlBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianControlBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+        <Setter Property="CaretBrush" Value="{StaticResource ObsidianAccentBrush}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource ObsidianSelectionBrush}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Chrome" CornerRadius="7"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                      Margin="{TemplateBinding Padding}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianControlHoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsReadOnly" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianControlDisabledBackgroundBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianControlDisabledBackgroundBrush}" />
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianControlDisabledBorderBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianControlDisabledTextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="TextBox" BasedOn="{StaticResource ObsidianTextBoxStyle}" />
+
+    <!-- ===== Button / CheckBox / ComboBox：沿用主窗口已验收的键控样式 ===== -->
+    <Style TargetType="Button" BasedOn="{StaticResource ObsidianButtonStyle}">
+        <!-- 旧版 App.xaml 全局 Button 样式给过 Margin=4；这里保留同样的默认间距，避免按钮互相贴住。 -->
+        <Setter Property="Margin" Value="4" />
+    </Style>
+    <Style TargetType="CheckBox" BasedOn="{StaticResource ObsidianCheckBoxStyle}" />
+    <Style TargetType="ComboBox" BasedOn="{StaticResource ObsidianComboBoxStyle}" />
+    <Style TargetType="ComboBoxItem" BasedOn="{StaticResource ObsidianComboBoxItemStyle}" />
+    <Style TargetType="ToolTip" BasedOn="{StaticResource ObsidianToolTipStyle}" />
+    <Style TargetType="ScrollBar" BasedOn="{StaticResource ObsidianScrollBarStyle}" />
+    <Style TargetType="ProgressBar" BasedOn="{StaticResource ObsidianProgressBarStyle}" />
+    <Style TargetType="Expander" BasedOn="{StaticResource ObsidianExpanderStyle}" />
+
+    <!-- ScrollViewer：只换底色，保留系统模板（DataGrid 内部依赖自己的 ScrollViewer 与命名部件，
+         套用自定义模板有破坏虚拟化/命名部件的风险）。滚动条本身由上面的 ScrollBar 样式接管。 -->
+    <Style TargetType="ScrollViewer">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <!-- ===== RadioButton ===== -->
+    <Style x:Key="ObsidianRadioButtonStyle" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Grid SnapsToDevicePixels="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="16" Height="16" VerticalAlignment="Center">
+                            <Ellipse x:Name="Box" Fill="{StaticResource ObsidianControlBackgroundBrush}"
+                                     Stroke="{StaticResource ObsidianControlBorderBrush}" StrokeThickness="1" />
+                            <Ellipse x:Name="Dot" Width="7" Height="7" Visibility="Collapsed"
+                                     Fill="{StaticResource ObsidianAccentInkBrush}" />
+                        </Grid>
+                        <ContentPresenter Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Box" Property="Fill" Value="{StaticResource ObsidianAccentBrush}" />
+                            <Setter TargetName="Box" Property="Stroke" Value="{StaticResource ObsidianAccentBrush}" />
+                            <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="Stroke" Value="{StaticResource ObsidianAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Box" Property="Stroke" Value="{StaticResource ObsidianFocusBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianControlDisabledTextBrush}" />
+                            <Setter TargetName="Box" Property="Fill" Value="{StaticResource ObsidianControlDisabledBackgroundBrush}" />
+                            <Setter TargetName="Box" Property="Stroke" Value="{StaticResource ObsidianControlDisabledBorderBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="RadioButton" BasedOn="{StaticResource ObsidianRadioButtonStyle}" />
+
+    <!-- ===== Separator ===== -->
+    <Style TargetType="Separator">
+        <Setter Property="Background" Value="{StaticResource ObsidianDividerBrush}" />
+        <Setter Property="Margin" Value="0,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Background="{TemplateBinding Background}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== GroupBox ===== -->
+    <Style TargetType="GroupBox">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianCardBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="0,6,0,0" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GroupBox">
+                    <Grid SnapsToDevicePixels="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="1" Grid.RowSpan="2" Margin="0,8,0,0" CornerRadius="10"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" />
+                        <Border Grid.Row="0" Margin="12,0,0,0" Padding="6,0" HorizontalAlignment="Left"
+                                Background="{StaticResource ObsidianWindowBackgroundBrush}">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ContentPresenter Grid.Row="1" Margin="{TemplateBinding Padding}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== ListBox / ListBoxItem ===== -->
+    <Style x:Key="ObsidianListBoxItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Chrome" CornerRadius="8" SnapsToDevicePixels="True"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianControlHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianAccentSoftBrush}" />
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianControlDisabledTextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ListBox">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianCardBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ObsidianListBoxItemStyle}" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+    </Style>
+
+    <!-- ===== DataGrid ===== -->
+    <Style x:Key="ObsidianColumnHeaderGripperStyle" TargetType="Thumb">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="SizeWE" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianTextSecondaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianTopBarBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,1" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeCaption}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridColumnHeader">
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="Chrome" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left"
+                               Style="{StaticResource ObsidianColumnHeaderGripperStyle}" />
+                        <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right"
+                               Style="{StaticResource ObsidianColumnHeaderGripperStyle}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianControlHoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridCell">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianGridLineBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeCaption}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border x:Name="Chrome" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="6,2" SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianAccentSoftBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridRow">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeCaption}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource ObsidianControlHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource ObsidianModeActiveBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="DataGrid">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianControlTextBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianChartBackgroundBrush}" />
+        <Setter Property="RowBackground" Value="Transparent" />
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource ObsidianControlBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource ObsidianGridLineBrush}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{StaticResource ObsidianGridLineBrush}" />
+        <Setter Property="RowHeaderWidth" Value="0" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeCaption}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+    </Style>
+
+    <!-- ===== TabControl / TabItem ===== -->
+    <Style TargetType="TabControl">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianSidebarBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource ObsidianFontFamily}" />
+    </Style>
+
+    <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianTextSecondaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="FontSize" Value="{StaticResource ObsidianFontSizeBody}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Chrome" CornerRadius="8,8,0,0" Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1,1,1,0" SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianControlHoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianTextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource ObsidianCardBackgroundBrush}" />
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource ObsidianCardBorderBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianAccentBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource ObsidianControlDisabledTextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== Slider ===== -->
+    <Style x:Key="ObsidianSliderRepeatButtonStyle" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ObsidianSliderThumbStyle" TargetType="Thumb">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid>
+                        <Ellipse x:Name="Dot" Fill="{StaticResource ObsidianAccentBrush}"
+                                 Stroke="{StaticResource ObsidianAccentPressedBrush}" StrokeThickness="1" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Dot" Property="Fill" Value="{StaticResource ObsidianAccentHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="Dot" Property="Fill" Value="{StaticResource ObsidianAccentHoverBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ObsidianSliderStyle" TargetType="Slider">
+        <Setter Property="Foreground" Value="{StaticResource ObsidianAccentBrush}" />
+        <Setter Property="Background" Value="{StaticResource ObsidianScrollTrackBrush}" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ObsidianFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid Background="Transparent" MinHeight="24" SnapsToDevicePixels="True">
+                        <Border Height="4" CornerRadius="2" VerticalAlignment="Center"
+                                Background="{TemplateBinding Background}" />
+                        <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ObsidianSliderRepeatButtonStyle}"
+                                              Command="Slider.DecreaseLarge" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource ObsidianSliderThumbStyle}" />
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ObsidianSliderRepeatButtonStyle}"
+                                              Command="Slider.IncreaseLarge" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{StaticResource ObsidianControlDisabledBackgroundBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="Slider" BasedOn="{StaticResource ObsidianSliderStyle}" />
+</ResourceDictionary>

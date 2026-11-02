@@ -13,7 +13,7 @@ public sealed class ProfileAutomationStatusTests
     private static readonly DateTimeOffset Now = new(2026, 10, 31, 10, 0, 0, TimeSpan.Zero);
 
     private const string RuleName = "gaming";
-    private const string SecretPath = @"C:\Users\someone\SecretFolder\player.exe";
+    private const string SecretPath = @"C:\synthetic\someone\SecretFolder\player.exe";
     private const string SecretCommandLine = "player.exe --token=tok-9f3c-SECRET";
     private const string SecretPattern = @"--token=(tok-\w+-SECRET|other)";
 

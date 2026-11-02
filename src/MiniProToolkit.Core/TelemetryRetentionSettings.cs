@@ -17,12 +17,24 @@ public sealed record TelemetryRetentionSettings
 
 public sealed class TelemetryRetentionSettingsStore(string directory)
 {
-    public string FilePath { get; } = Path.Combine(Path.GetFullPath(directory), "telemetry-retention.json");
+    public const string FileName = "telemetry-retention.json";
+    public string FilePath { get; } = Path.Combine(Path.GetFullPath(directory), FileName);
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
-    public TelemetryRetentionSettings Load(out string? warning)
+    /// <summary>Compatibility overload; callers that only show the warning can ignore trust.</summary>
+    public TelemetryRetentionSettings Load(out string? warning) => Load(out warning, out _);
+
+    /// <summary>
+    /// Loads the effective retention policy and reports whether it may drive destructive maintenance.
+    /// Missing file = defaults are the intended policy (trusted: no user preference ever existed).
+    /// Valid file = explicit user intent (trusted). Unreadable/unknown-version/out-of-range file =
+    /// <paramref name="trusted"/> false: the returned defaults are only a non-destructive placeholder
+    /// and archive deletion must not run on them.
+    /// </summary>
+    public TelemetryRetentionSettings Load(out string? warning, out bool trusted)
     {
         warning = null;
+        trusted = true;
         try
         {
             if (!File.Exists(FilePath)) return new();
@@ -33,7 +45,8 @@ public sealed class TelemetryRetentionSettingsStore(string directory)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
-            warning = "历史保留配置无效，使用默认 10 MiB / 3 份归档 / 不按年龄清理：" + ex.Message;
+            trusted = false;
+            warning = "历史保留配置无效，已暂停自动清理归档，暂按 10 MiB / 3 份归档 / 不按年龄清理写入：" + ex.Message;
             return new();
         }
     }

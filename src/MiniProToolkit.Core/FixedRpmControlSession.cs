@@ -25,6 +25,9 @@ public sealed class FixedRpmControlSession
     private readonly int _rpmBadSampleTolerance;
     private int _rpmBadSamples;
     private long _lastTick;
+    // Timestamp of the last EC-automatic restore attempt made by the latch/recovery retry paths.
+    // Bounds automatic retries to one per ControlInterval; null means "no attempt yet".
+    private long? _lastRecoveryAttempt;
     private string? _faultReason;
     private bool _emergencyLatched;
     private bool _emergencyDutyHeld;
@@ -85,16 +88,25 @@ public sealed class FixedRpmControlSession
     public void Tick(HardwareSnapshot snapshot, bool guardianRunning, bool leaseValid = true)
     {
         if (!IsActive && !RecoveryRequired && !_emergencyLatched) return;
-        if (_clock.GetElapsedTime(_lastTick) < ControlInterval) return;
-        _lastTick = _clock.GetTimestamp();
+        // ControlInterval throttles closed-loop work only (feedback adjustment, bad-RPM
+        // tolerance counting, full-duty re-assert after a failed emergency write and the bounded
+        // recovery retry). It must never defer a fail-safe gate: an expired lease, a stopped
+        // Guardian, an invalid/stale/future sample or a 90 °C reading are evaluated on every
+        // completed sample, so the worst-case reaction is one sample instead of up to two
+        // control intervals. The gate below is deliberately checked after those guards.
+        var controlDue = _clock.GetElapsedTime(_lastTick) >= ControlInterval;
+        if (controlDue) _lastTick = _clock.GetTimestamp();
         if (_emergencyLatched)
         {
-            TickEmergencyLatched(snapshot, guardianRunning, leaseValid);
+            TickEmergencyLatched(snapshot, guardianRunning, leaseValid, controlDue);
             return;
         }
         if (!IsActive)
         {
-            RetryRecovery(); // A failed restore never re-enables feedback writes.
+            // Fail-closed after a fault: EC automatic owns the fan, only the bounded retry runs.
+            // The retry cadence is its own 1 Hz bound (not the control cadence), so a fault that
+            // was detected mid-interval is still retried no more than once per second.
+            if (RecoveryRetryDue) RetryRecovery(); // A failed restore never re-enables feedback.
             return;
         }
         if (!guardianRunning || !leaseValid)
@@ -115,6 +127,8 @@ public sealed class FixedRpmControlSession
             EngageEmergencyFullSpeed();
             return;
         }
+        // Only the duty-adjusting feedback path below is throttled by the control cadence.
+        if (!controlDue) return;
         if (!IsValidRpm(snapshot.Fan1Rpm))
         {
             TolerateBadRpmSample();
@@ -175,7 +189,8 @@ public sealed class FixedRpmControlSession
     // 90 °C latch. Guardian/lease loss and bad or stale samples may still hand control back to
     // EC automatic once (the documented recovery), but they never clear the latch and they never
     // resume closed-loop control: a later ordinary tick can only re-assert full duty.
-    private void TickEmergencyLatched(HardwareSnapshot snapshot, bool guardianRunning, bool leaseValid)
+    private void TickEmergencyLatched(HardwareSnapshot snapshot, bool guardianRunning, bool leaseValid,
+        bool controlDue)
     {
         _feedback.Stop();
         State = FanRpmFeedbackState.Fault;
@@ -191,8 +206,11 @@ public sealed class FixedRpmControlSession
             FailLatched(invalidSample);
             return;
         }
-        if (!_emergencyDutyHeld)
-            HoldEmergencyFullSpeed(); // Never a lower duty, never feedback writes.
+        // Detections above are never throttled; only the full-duty re-assert (after a failed
+        // write or an EC-automatic hand-off) stays at the control cadence. Never a lower duty,
+        // never feedback writes.
+        if (!_emergencyDutyHeld && controlDue)
+            HoldEmergencyFullSpeed();
     }
 
     private void EngageEmergencyFullSpeed()
@@ -228,12 +246,20 @@ public sealed class FixedRpmControlSession
         {
             // EC automatic was already requested for this latch: keep the latch without repeating
             // the same write on every tick.
-            Fault = $"{_faultReason ?? reason} {EmergencyLatchRetainedText}";
+            Fault = $"{reason} {EmergencyLatchRetainedText}";
             return;
         }
         _emergencyDutyHeld = false;
         _faultReason = reason;
         RecoveryRequired = true;
+        if (!RecoveryRetryDue)
+        {
+            // An attempt already happened within the last ControlInterval: keep the latch and wait
+            // for the bounded retry instead of issuing one WMI restore per sample/UI refresh.
+            Fault = $"{reason} EC 自动恢复失败，等待重试。{EmergencyLatchRetainedText}";
+            return;
+        }
+        _lastRecoveryAttempt = _clock.GetTimestamp();
         try
         {
             _restoreAutomatic();
@@ -286,8 +312,15 @@ public sealed class FixedRpmControlSession
         RetryRecovery();
     }
 
+    // One automatic restore attempt per ControlInterval; a latch or recovery fault can be
+    // re-detected on every sample, but never turned into repeated WMI writes.
+    private bool RecoveryRetryDue =>
+        _lastRecoveryAttempt is not { } attempt ||
+        _clock.GetElapsedTime(attempt) >= ControlInterval;
+
     private void RetryRecovery()
     {
+        _lastRecoveryAttempt = _clock.GetTimestamp();
         try
         {
             _restoreAutomatic();

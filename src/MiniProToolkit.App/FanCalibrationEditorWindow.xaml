@@ -6,7 +6,22 @@
         Height="500"
         MinWidth="680"
         MinHeight="400"
-        WindowStartupLocation="CenterOwner" Closing="EditorClosing">
+        WindowStartupLocation="CenterOwner" Closing="EditorClosing" Background="{DynamicResource ObsidianWindowBackgroundBrush}"
+        Foreground="{DynamicResource ObsidianTextPrimaryBrush}"
+        FontFamily="{DynamicResource ObsidianFontFamily}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 方案 A「曜石控制舱」共用皮肤：基础色 + 键控样式 + 仅在本窗口生效的隐式控件样式。
+                     只在当前窗口合并，不写进 App.xaml 全局资源，避免污染 OSD / 任务栏 overlay 的用户自定义视觉。 -->
+                <ResourceDictionary Source="Themes/Obsidian.Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <DockPanel Margin="14">
         <StackPanel x:Name="EditButtons" DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="添加点" Click="AddPointClick" Margin="0,0,6,0" />
@@ -23,7 +38,7 @@
                 <Button x:Name="StartSamplingButton" Content="开始自动实测" Click="StartSamplingClick" Margin="0,0,8,0" />
                 <Button x:Name="CancelSamplingButton" Content="取消实测并恢复自动" Click="CancelSamplingClick" IsEnabled="False" />
             </StackPanel>
-            <TextBlock x:Name="SamplingStatusText" TextWrapping="Wrap" Foreground="#4B5563" />
+            <TextBlock x:Name="SamplingStatusText" TextWrapping="Wrap" Foreground="{StaticResource ObsidianTextSecondaryBrush}" />
         </StackPanel>
         <Grid>
             <Grid.RowDefinitions>
@@ -35,9 +50,9 @@
             </Grid.RowDefinitions>
             <TextBlock Text="风扇 duty/RPM 标定" FontSize="22" FontWeight="SemiBold" />
             <TextBlock Grid.Row="1" Text="输入实测 duty 与 RPM。duty 必须严格递增、覆盖 40%–100%，RPM 必须不下降。只有点击“开始自动实测”才控制风扇；导入、重置或实测后需保存才会应用标定。"
-                       Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,12" />
-            <TextBlock Grid.Row="2" x:Name="RangeText" Foreground="#4B5563" Margin="0,0,0,8" TextWrapping="Wrap" />
-            <Border Grid.Row="3" Background="#F3F4F6" Margin="0,0,0,8" ClipToBounds="True">
+                       Foreground="{StaticResource ObsidianTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
+            <TextBlock Grid.Row="2" x:Name="RangeText" Foreground="{StaticResource ObsidianTextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
+            <Border Grid.Row="3" Background="{StaticResource ObsidianChartBackgroundBrush}" Margin="0,0,0,8" ClipToBounds="True">
                 <Canvas x:Name="PreviewCanvas" SizeChanged="PreviewSizeChanged" />
             </Border>
             <DataGrid Grid.Row="4" x:Name="PointsGrid" CanUserSortColumns="False" AutoGenerateColumns="False" CanUserAddRows="False"
